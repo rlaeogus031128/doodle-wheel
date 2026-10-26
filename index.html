@@ -3,713 +3,830 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta property="og:title" content="낙서 바퀴 — 도전장이 도착했다">
-<meta property="og:description" content="바퀴를 그려서 개장애물 코스를 넘어라. 친구 기록을 깰 수 있을까?">
+<title>낙서 팽이</title>
+<meta property="og:title" content="낙서 팽이 — 도전장이 도착했다">
+<meta property="og:description" content="팽이를 그려서 붙어라. 내 팽이를 이길 수 있을까?">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#fbfaf4">
-<style>*,*::before,*::after{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}[hidden]{display:none!important}</style>
-<title>낙서 바퀴</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap">
 <style>
-/* Layout: full-screen notebook page. Course scrolls on the canvas; the wheel pad is a sticky note pinned at the bottom. Single deliberate paper look. */
+/* Layout: a notebook page; the canvas behind is the stadium, cards float on top like taped-in notes. Single deliberate paper look. */
+*,*::before,*::after{box-sizing:border-box}
 :root{
   --paper:#fbfaf4; --rule:#cfdcec; --margin:#eaa6a0;
-  --ink:#1e2232; --ink2:#5d6275; --red:#d4402b; --good:#2f7d55; --kakao:#fee500; --kakao-ink:#1a1700;
+  --ink:#1e2232; --ink2:#5d6275; --red:#d4402b; --blue:#2c5fa8; --kakao:#fee500; --kakao-ink:#1a1700;
   --display:'Gaegu','Nanum Pen Script','Comic Sans MS',cursive;
   --body:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
   --hand:255px 18px 225px 16px / 16px 225px 18px 255px;
   color-scheme:light;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
 html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:14px;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
 #cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 
-#hud{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 8px);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-#time{font-family:var(--display);font-weight:700;font-size:clamp(40px,10vw,58px);line-height:1;font-variant-numeric:tabular-nums}
-#vs{font-size:13px;color:var(--ink2);min-height:18px}
-#split{font-family:var(--display);font-weight:700;font-size:26px;min-height:30px;opacity:0;transition:opacity .2s}
-#split.on{opacity:1}
-#split.bad{color:var(--red)} #split.ok{color:var(--good)}
-#reset{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:max(12px,env(safe-area-inset-right,0px));font-family:var(--display);font-weight:700;font-size:17px;padding:4px 10px;border:2px solid var(--ink);border-radius:var(--hand);background:var(--paper);color:var(--ink);box-shadow:2px 2px 0 var(--ink);cursor:pointer}
-
-#padWrap{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;flex-direction:column;align-items:center;gap:6px}
-#padHint{font-family:var(--display);font-weight:700;font-size:20px;color:var(--ink2)}
-#padHint.call{color:var(--red);animation:nud 1s ease-in-out infinite}
-@keyframes nud{50%{transform:translateY(-3px)}}
-#pad{display:block;background:var(--paper);border:2.5px solid var(--ink);border-radius:var(--hand);box-shadow:4px 5px 0 var(--ink);touch-action:none;cursor:crosshair}
-
-.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:color-mix(in srgb,var(--paper) 60%,transparent);overflow-y:auto;z-index:5}
-.card{width:min(390px,100%);max-height:100%;overflow-y:auto;background:var(--paper);border:2.5px solid var(--ink);border-radius:var(--hand);box-shadow:5px 6px 0 var(--ink);padding:22px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.screen{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-y:auto;z-index:5}
+.screen.dim{background:color-mix(in srgb,var(--paper) 55%,transparent);align-items:center}
+.card{width:min(420px,100%);margin-block:auto;background:var(--paper);border:2.5px solid var(--ink);border-radius:var(--hand);box-shadow:5px 6px 0 var(--ink);padding:20px 18px 18px;display:flex;flex-direction:column;gap:14px}
 .eyebrow{font-size:12px;letter-spacing:.08em;color:var(--ink2)}
-h1,h2{font-family:var(--display);font-weight:700;margin:0;line-height:1.05;text-wrap:balance}
-h1{font-size:56px} h1 em{font-style:normal;color:var(--red)}
-h2{font-size:42px} h2.win{color:var(--red)}
+h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;line-height:1.05;text-wrap:balance}
+h1{font-size:58px} h1 em{font-style:normal;color:var(--red)}
+h2{font-size:44px} h2.win{color:var(--red)}
+h3{font-size:24px}
 p{margin:0;line-height:1.55}
-.muted{color:var(--ink2);font-size:14px}
-.rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14.5px;line-height:1.45}
-.rules li{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
-.rules b{font-family:var(--display);font-size:20px;font-weight:700}
-.rules b.r{color:var(--red)}
-.big{font-family:var(--display);font-weight:700;font-size:34px;font-variant-numeric:tabular-nums;line-height:1}
-.tip{font-family:var(--display);font-size:21px;line-height:1.3;border-left:3px solid var(--red);padding-left:10px}
-.tblWrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
-th{font-weight:400;color:var(--ink2);font-size:12px;text-align:right;padding:2px 4px;border-bottom:1.5px solid var(--ink)}
-th:first-child,td:first-child{text-align:left}
-td{padding:5px 4px;text-align:right;border-bottom:1px dashed var(--rule)}
-td.bad{color:var(--red);font-weight:700} td.ok{color:var(--good);font-weight:700}
-tr.worst td{background:color-mix(in srgb,var(--red) 9%,transparent)}
+.muted{color:var(--ink2);font-size:13.5px}
+.quote{font-family:var(--display);font-size:20px;color:var(--ink2)}
+
+.ladder{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ladder li{display:grid;grid-template-columns:28px 44px 1fr auto;gap:10px;align-items:center;padding:4px 6px;border-radius:10px}
+.ladder li.next{background:color-mix(in srgb,var(--red) 9%,transparent)}
+.ladder li.locked{opacity:.45}
+.ladder .no{font-family:var(--display);font-weight:700;font-size:22px;color:var(--ink2);text-align:center}
+.ladder canvas{width:44px;height:44px}
+.ladder .nm{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.1}
+.ladder .tag{font-size:12px;color:var(--ink2)}
+.ladder .st{font-family:var(--display);font-weight:700;font-size:18px}
+.ladder .st.done{color:var(--red)}
+
+.vsrow{display:flex;gap:12px;align-items:center}
+.vsrow canvas{flex:none;width:84px;height:84px;border:2px dashed var(--rule);border-radius:12px}
+.vsrow .who{display:flex;flex-direction:column;gap:4px;min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12.5px;border:1.5px solid var(--ink2);border-radius:999px;padding:1px 9px;color:var(--ink2)}
+.chip.hid{border-style:dashed}
+
+.padbox{display:flex;flex-direction:column;align-items:center;gap:6px}
+#pad{width:min(260px,72vw);height:min(260px,72vw);background:var(--paper);border:2.5px solid var(--ink);border-radius:var(--hand);box-shadow:4px 5px 0 var(--ink);touch-action:none;cursor:crosshair}
+.padbar{display:flex;justify-content:space-between;align-items:center;width:min(260px,72vw);font-size:13px;color:var(--ink2)}
+.linkbtn{font-family:var(--display);font-weight:700;font-size:18px;background:none;border:none;color:var(--red);cursor:pointer;padding:2px 4px}
+
+.stats{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center;font-size:13px}
+.stats .bar{height:10px;border:2px solid var(--ink);border-radius:var(--hand);overflow:hidden}
+.stats .bar i{display:block;height:100%;background:var(--ink);width:0;transition:width .25s}
+.stats .bar.atk i{background:var(--red)}
+.typeLabel{font-family:var(--display);font-weight:700;font-size:22px}
+.typeLabel span{color:var(--red)}
+
+.group{display:flex;flex-direction:column;gap:6px}
+.group > b{font-size:12px;letter-spacing:.06em;color:var(--ink2);font-weight:400}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.opts.two{grid-template-columns:repeat(2,1fr)}
+.opt{font-family:var(--body);text-align:left;padding:7px 8px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:1px;min-width:0}
+.opt strong{font-family:var(--display);font-size:20px;line-height:1}
+.opt small{font-size:11px;color:var(--ink2);line-height:1.25}
+.opt[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.opt[aria-pressed="true"] small{color:color-mix(in srgb,var(--paper) 75%,transparent)}
+
 .row{display:flex;gap:10px;flex-wrap:wrap}
-.btn{flex:1 1 140px;font-family:var(--display);font-weight:700;font-size:23px;padding:10px 14px;border:2.5px solid var(--ink);border-radius:var(--hand);background:var(--paper);color:var(--ink);box-shadow:3px 3px 0 var(--ink);cursor:pointer;transition:transform .06s,box-shadow .06s}
+.btn{flex:1 1 140px;font-family:var(--display);font-weight:700;font-size:24px;padding:10px 14px;border:2.5px solid var(--ink);border-radius:var(--hand);background:var(--paper);color:var(--ink);box-shadow:3px 3px 0 var(--ink);cursor:pointer;transition:transform .06s,box-shadow .06s}
 .btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
-.btn:focus-visible,input:focus-visible,#reset:focus-visible{outline:3px dashed var(--red);outline-offset:3px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.main{background:var(--ink);color:var(--paper)}
+.btn.fire{background:var(--red);border-color:var(--ink);color:var(--paper);font-size:30px}
 .btn.kakao{background:var(--kakao);color:var(--kakao-ink)}
+.btn.small{font-size:19px;padding:7px 10px}
+.btn:focus-visible,.opt:focus-visible,input:focus-visible,.linkbtn:focus-visible{outline:3px dashed var(--red);outline-offset:3px}
 .namebox{display:flex;align-items:center;gap:10px;font-size:14px}
 .namebox input{flex:1;min-width:0;font-family:var(--display);font-size:22px;font-weight:700;border:none;border-bottom:2px solid var(--ink);background:transparent;color:var(--ink);padding:2px 4px;-webkit-user-select:text;user-select:text}
 #copyOut{width:100%;min-height:90px;font:13px/1.4 var(--body);border:2px dashed var(--ink2);border-radius:8px;padding:8px;background:var(--paper);color:var(--ink);resize:none;-webkit-user-select:text;user-select:text}
 .toast{font-size:14px;color:var(--red);min-height:20px}
 .seal{display:inline-block;font-family:var(--display);font-weight:700;color:var(--red);border:2.5px solid var(--red);border-radius:6px;padding:0 8px;transform:rotate(-4deg);font-size:20px}
-.chalRow{display:flex;gap:14px;align-items:center}
-#chalCv{flex:none;width:96px;height:96px;border:2px dashed var(--ink2);border-radius:10px;background:var(--paper)}
-.vs{font-family:var(--display);font-size:23px;line-height:1.3}
-.vs strong{font-size:38px;color:var(--red);font-variant-numeric:tabular-nums}
-@media (prefers-reduced-motion:reduce){.btn{transition:none}#padHint.call{animation:none}}
-</style>
 
+#hud{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 10px);display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start;pointer-events:none;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));z-index:3}
+.side{display:flex;flex-direction:column;gap:3px;min-width:0}
+.side.r{align-items:flex-end;text-align:right}
+.side .nm{font-family:var(--display);font-weight:700;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.side .sp{width:min(150px,100%);height:12px;border:2px solid var(--ink);border-radius:var(--hand);overflow:hidden}
+.side .sp i{display:block;height:100%;width:100%;background:var(--ink)}
+.side.me .sp i{background:var(--red)}
+#clock{font-family:var(--display);font-weight:700;font-size:34px;font-variant-numeric:tabular-nums;line-height:1}
+@media (prefers-reduced-motion:reduce){.btn,.stats .bar i{transition:none}}
+</style>
 </head>
 <body>
-<canvas id="cv" aria-label="코스 화면"></canvas>
+<canvas id="cv" aria-label="팽이 경기장"></canvas>
 
 <div id="hud" hidden>
-  <div id="time">0.00</div>
-  <div id="vs"></div>
-  <div id="split"></div>
-</div>
-<button id="reset" hidden>체크포인트로</button>
-
-<div id="padWrap" hidden>
-  <div id="padHint">여기에 바퀴를 그려</div>
-  <canvas id="pad" aria-label="바퀴 그리는 칸"></canvas>
+  <div class="side me"><div class="nm" id="hMe">나</div><div class="sp"><i id="spMe"></i></div></div>
+  <div id="clock">15</div>
+  <div class="side r"><div class="nm" id="hFoe">상대</div><div class="sp"><i id="spFoe"></i></div></div>
 </div>
 
-<section class="screen" id="menu">
+<!-- home: ladder -->
+<section class="screen dim" id="home">
   <div class="card">
-    <div class="eyebrow">개장애물 1코스</div>
-    <h1>낙서<br><em>바퀴</em></h1>
-    <ul class="rules">
-      <li><b>그리기</b><span>아래 칸에 아무 모양이나 그리면 그게 바퀴가 된다</span></li>
-      <li><b class="r">다시</b><span>달리는 중에도 다시 그리면 바로 바뀐다</span></li>
-      <li><b>요령</b><span>계단, 벽, 터널, 점프대. 구간마다 맞는 바퀴가 다르다</span></li>
-      <li><b>추락</b><span>떨어지면 마지막 깃발에서 다시. 시간은 계속 간다</span></li>
-    </ul>
-    <p class="muted" id="bestLine">완주 기록을 카톡으로 보내면 친구는 내 고스트랑 같이 달린다.</p>
-    <div class="row"><button class="btn main" id="startBtn">출발</button></div>
+    <div class="eyebrow">그린 대로 도는 팽이 대결</div>
+    <h1>낙서<br><em>팽이</em></h1>
+    <p class="muted">뾰족하면 세게 치고, 넓으면 오래 돌고, 무거우면 안 밀린다. 상대 팽이를 보고 이길 팽이를 그려라. 8명을 다 이기면 끝.</p>
+    <ul class="ladder" id="ladder"></ul>
+    <div class="row"><button class="btn main" id="goBtn">도전</button></div>
   </div>
 </section>
 
-<section class="screen" id="chal" hidden>
+<!-- challenge from a friend -->
+<section class="screen dim" id="chal" hidden>
   <div class="card">
     <span><span class="seal">도전장</span></span>
-    <div class="chalRow">
-      <canvas id="chalCv" aria-label="상대가 마지막에 쓴 바퀴"></canvas>
-      <p class="vs"><span id="chalName"></span>님이 이 바퀴로<br><strong id="chalTime">0</strong>초</p>
+    <div class="vsrow">
+      <canvas id="chalCv" width="84" height="84" aria-label="상대 팽이"></canvas>
+      <div class="who">
+        <h3 id="chalName">상대</h3>
+        <div class="chips" id="chalChips"></div>
+      </div>
     </div>
-    <p class="muted">같은 코스에서 상대 고스트랑 같이 달린다. 깃발마다 몇 초 차이인지 바로 나온다.</p>
-    <div class="row"><button class="btn main" id="acceptBtn">받아들이기</button></div>
-    <button class="btn" id="soloBtn" style="font-size:19px">그냥 혼자 달리기</button>
+    <p class="muted" id="chalSub">부품은 다 보인다. 회전 방향만 숨겨져 있다.</p>
+    <div class="row"><button class="btn main" id="chalGo">붙어보기</button></div>
+    <button class="btn small" id="chalSkip">그냥 사다리 하기</button>
   </div>
 </section>
 
-<section class="screen" id="result" hidden>
+<!-- prep: draw + pick parts -->
+<section class="screen dim" id="prep" hidden>
   <div class="card">
-    <div class="eyebrow" id="resEyebrow">완주</div>
-    <h2 id="verdict">0.00초</h2>
-    <p class="tip" id="tip" hidden></p>
-    <div class="tblWrap"><table id="segTbl"></table></div>
-    <p class="muted" id="resSub"></p>
-    <label class="namebox" for="nm">이름 <input id="nm" maxlength="8" placeholder="도전장에 쓸 이름" autocomplete="off"></label>
-    <div class="row"><button class="btn kakao" id="shareBtn">카톡으로 도전장 보내기</button></div>
-    <div class="toast" id="toast" aria-live="polite"></div>
-    <textarea id="copyOut" hidden readonly aria-label="복사할 도전장 문구"></textarea>
+    <div class="vsrow">
+      <canvas id="foeCv" width="84" height="84" aria-label="상대 팽이"></canvas>
+      <div class="who">
+        <div class="eyebrow" id="foeNo">VS</div>
+        <h3 id="foeName">상대</h3>
+        <div class="quote" id="foeQuote"></div>
+        <div class="chips" id="foeChips"></div>
+      </div>
+    </div>
+
+    <div class="padbox">
+      <canvas id="pad" aria-label="팽이 그리는 칸. 가운데가 회전축."></canvas>
+      <div class="padbar"><span id="padHint">위에서 본 모양을 한 붓에. 가운데 + 가 축</span><button class="linkbtn" id="clearBtn">지우기</button></div>
+    </div>
+
+    <div class="typeLabel" id="typeLabel">아직 안 그림</div>
+    <div class="stats">
+      <span>공격</span><div class="bar atk"><i id="stAtk"></i></div>
+      <span>무게</span><div class="bar"><i id="stDef"></i></div>
+      <span>지구력</span><div class="bar"><i id="stSta"></i></div>
+    </div>
+
+    <div class="group"><b>베어링</b><div class="opts" id="optB"></div></div>
+    <div class="group"><b>축 (맨 밑)</b><div class="opts" id="optT"></div></div>
+    <div class="group"><b>회전</b><div class="opts two" id="optD">
+      <button class="opt" data-v="1" aria-pressed="true"><strong>오른쪽 ↻</strong><small>시계 방향</small></button>
+      <button class="opt" data-v="-1" aria-pressed="false"><strong>왼쪽 ↺</strong><small>반시계 방향</small></button>
+    </div></div>
+    <p class="muted">같은 방향끼리는 비비며 버티고, 반대 방향끼리는 세게 부딪힌다.</p>
+
     <div class="row">
-      <button class="btn main" id="againBtn">바로 다시</button>
-      <button class="btn" id="homeBtn">처음으로</button>
+      <button class="btn small" id="backBtn" style="flex:0 1 auto">뒤로</button>
+      <button class="btn fire" id="fireBtn" disabled>슛!</button>
     </div>
   </div>
 </section>
 
-<script src="https://cdn.jsdelivr.net/npm/planck@1.0.0/dist/planck.min.js"></script>
+<!-- result -->
+<section class="screen dim" id="result" hidden>
+  <div class="card">
+    <div class="eyebrow" id="resEyebrow">결과</div>
+    <h2 id="verdict">승리</h2>
+    <p id="resWhy" class="quote"></p>
+    <div class="row">
+      <button class="btn main" id="nextBtn">다음 상대</button>
+      <button class="btn" id="againBtn">한 번 더</button>
+    </div>
+    <button class="btn small" id="editBtn">팽이 고치기</button>
+    <div id="shareBox" class="group" hidden>
+      <b>이 팽이로 카톡 도전장</b>
+      <label class="namebox" for="nm">이름 <input id="nm" maxlength="8" placeholder="도전장에 쓸 이름" autocomplete="off"></label>
+      <button class="btn kakao" id="shareBtn">카톡으로 도전장 보내기</button>
+      <div class="toast" id="toast" aria-live="polite"></div>
+      <textarea id="copyOut" hidden readonly aria-label="복사할 도전장 문구"></textarea>
+    </div>
+  </div>
+</section>
+
 <script>
-(() => {
-const BASE_URL = '';
-const pl = planck;
-const $ = id => document.getElementById(id);
-const C = { paper:'#fbfaf4', rule:'#cfdcec', margin:'#eaa6a0', ink:'#1e2232', ink2:'#5d6275', red:'#d4402b', good:'#2f7d55' };
-const FONT = "Gaegu, 'Nanum Pen Script', cursive";
-const STEP = 1/60, PPM = 30, KEEP_K = 45, KEEP_D = 9, MOTOR = 9, TORQUE = 260, GRAV = 22, SPIN = 9/60, WSCALE = 130, TH = 9, AXLE = 42, KILL_Y = 460, START_X = 60;
 
-/* ---------- course ---------- */
-const STRIPS = [
-  [[-400,400],[-400,0],[500,0],[560,-20],[620,0],[680,-25],[740,0],[900,0],[900,-35],[990,-35],[990,-70],[1080,-70],[1080,-105],[1170,-105],[1170,-140],[1300,-140],[1300,400]],
-  [[1420,400],[1420,-140],[1600,-140],[1800,-40],[1900,-40],[1900,-150],[2150,-150],[2150,-60],[2800,-60],[2830,-90],[2860,-60],[2890,-95],[2920,-60],[2950,-90],[2980,-60],[3010,-100],[3040,-60],[3200,-60],[3450,-160],[3450,400]],
-  [[3650,400],[3650,-80],[3900,-80],[3900,-20],[4000,-20],[4000,40],[4100,40],[4300,-120],[4800,-120],[4800,-700]]
+let AIR_SPIKY = 0.6, E_BASE = 0.3, E_SPIKE = 0.45;
+const EXITS = [Math.PI/2, Math.PI/2 + 2*Math.PI/3, Math.PI/2 + 4*Math.PI/3], EXIT_HALF = 0.26;
+const N = 64, TOPSCALE = 110, RMAX = 58, HUB = 9, ARENA_R = 230, DT = 1/240, T_LIMIT = 15, M0 = 40, W0 = 80;
+const BEARINGS = [
+  { id:'light', name:'경량',     desc:'초반 회전 ↑',     mass:1.0,  spin:1.18, decay:1.0  },
+  { id:'ball',  name:'볼베어링', desc:'회전 오래 감',    mass:1.0,  spin:1.0,  decay:0.62 },
+  { id:'lead',  name:'납추',     desc:'무거워서 안 밀림', mass:1.55, spin:0.94, decay:1.1  }
 ];
-const CEIL = { x1:2420, x2:2680, y:-116 };
-const CPS = [
-  { x:1250, name:'계단' }, { x:2050, name:'낭떠러지·벽' }, { x:2350, name:'내리막' },
-  { x:3150, name:'터널·가시밭' }, { x:3800, name:'점프대' }, { x:4450, name:'급경사' }
+const TIPS = [
+  { id:'sharp', name:'샤프', desc:'가운데서 버팀',   fric:5,  damp:0.45, prop:0,   center:1.0 },
+  { id:'flat',  name:'플랫', desc:'빙글빙글 돌격',   fric:12, damp:0.7,  prop:90,  center:0.75 },
+  { id:'ball',  name:'볼',   desc:'충격 흡수',       fric:8,  damp:2.4,  prop:0,   center:1.2 }
 ];
-const LABELS = [[880,-60,'계단'],[1330,-200,'낭떠러지!'],[1880,-190,'벽'],[2430,-170,'터널 (낮음)'],[2850,-130,'가시밭'],[3300,-170,'점프대'],[4120,-30,'급경사']];
-const FINISH = CPS[CPS.length-1].x;
 
-function groundY(x){
-  let best = null;
-  for (const s of STRIPS) for (let i = 0; i < s.length-1; i++){
-    const a = s[i], b = s[i+1];
-    if (b[0] - a[0] <= 0) continue;
-    if (x >= a[0] && x <= b[0]){
-      const y = a[1] + (b[1]-a[1]) * (x-a[0]) / (b[0]-a[0]);
-      if (best === null || y < best) best = y;
-    }
+function densify(pts, step){
+  if (pts.length < 2) return pts.slice();
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length; i++){
+    const a = pts[i-1], b = pts[i], d = Math.hypot(b.x-a.x, b.y-a.y), n = Math.max(1, Math.ceil(d/step));
+    for (let k = 1; k <= n; k++) out.push({ x:a.x + (b.x-a.x)*k/n, y:a.y + (b.y-a.y)*k/n });
   }
-  return best;
+  return out;
 }
 
-/* ---------- utils ---------- */
+/* radial profile around the pad centre (= the spin axis) */
+function profileOf(pts){
+  const loc = densify(pts.map(p => ({ x:(p.x-0.5)*TOPSCALE, y:(p.y-0.5)*TOPSCALE })), 1.0);
+  const prof = new Array(N).fill(0);
+  for (const p of loc){
+    const r = Math.min(RMAX, Math.hypot(p.x, p.y));
+    const k = ((Math.round(Math.atan2(p.y, p.x) / (2*Math.PI) * N) % N) + N) % N;
+    if (r > prof[k]) prof[k] = r;
+  }
+  for (let k = 0; k < N; k++) prof[k] = Math.max(prof[k], HUB);
+  return prof;
+}
+
+function rAt(prof, th){
+  let f = th / (2*Math.PI) * N; f = ((f % N) + N) % N;
+  const i = Math.floor(f), t = f - i, a = prof[i], b = prof[(i+1) % N];
+  return { r: a + (b-a)*t, dr: (b-a) / (2*Math.PI/N) };
+}
+
+function shapeStats(prof){
+  const dth = 2*Math.PI/N;
+  let area = 0, Ia = 0, r3 = 0, sumR = 0, sumD = 0;
+  for (let k = 0; k < N; k++){
+    const r = prof[k]; area += 0.5*r*r*dth; Ia += 0.25*r**4*dth; r3 += r**3*dth; sumR += r;
+    sumD += Math.abs(prof[(k+1)%N] - r);
+  }
+  const rg2 = Ia / area;
+  const spiky = Math.min(2.5, sumD / sumR * 4);
+  return { rg2, r3, spiky, rmax: Math.max(...prof), rmean: sumR/N };
+}
+
+function makeTop(spec, x, y, sideSign){
+  const prof = profileOf(spec.shape);
+  const B = BEARINGS[spec.b], T = TIPS[spec.t], st = shapeStats(prof);
+  const m = M0 * B.mass;
+  const I = M0 * st.rg2 * (B.id === 'lead' ? 1.15 : 1);
+  const w = W0 * B.spin * spec.d;
+  return { prof, B, T, st, m, I, x, y, vx: 0, vy: 70 * sideSign * spec.d * -1 * 0 + 0, a: 0, w, w0: Math.abs(w),
+           state:'spin', endT:0, wob:0, name: spec.name || '' };
+}
+
+function launch(top, sideSign, rnd){
+  // fired from the side, curving in; rnd gives each launch a little life
+  const r = rnd || (() => 0.5);
+  top.a = r() * Math.PI * 2;
+  top.vx = -sideSign * (34 + r()*12);
+  top.vy = (24 + r()*16) * Math.sign(top.w) * sideSign;
+}
+function rngOf(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+function spinDecel(t){
+  const tip = t.T.fric * t.m * 260 * t.B.decay;
+  const air = 0.0011 * Math.abs(t.w) * t.st.r3 * (1 + AIR_SPIKY*t.st.spiky);
+  return (tip + air) / t.I;
+}
+
+function stepTop(t, dt, foe){
+  if (t.state !== 'spin') return;
+  const d = Math.hypot(t.x, t.y) || 1e-6;
+  const frac = Math.abs(t.w) / t.w0;
+  // bowl slope pulls toward the centre
+  let ax = -1.5 * t.x * t.T.center, ay = -1.5 * t.y * t.T.center;
+  // flat tips roll around the bowl in the spin direction
+  if (t.T.prop){
+    const p = t.T.prop * Math.min(1, frac*1.4), sg = Math.sign(t.w);
+    // half tornado around the bowl, half hunting the opponent
+    let hx = -t.y / d * sg, hy = t.x / d * sg;
+    if (foe && foe.state === 'spin'){
+      const fx = foe.x - t.x, fy = foe.y - t.y, fd = Math.hypot(fx, fy) || 1;
+      hx = hx * 0.45 + fx / fd * 0.55; hy = hy * 0.45 + fy / fd * 0.55;
+    }
+    ax += hx * p; ay += hy * p;
+    // and drift outward a little (they hug the slope)
+    ax += t.x / d * 6 * frac; ay += t.y / d * 6 * frac;
+  }
+  // low spin → wobble drifts
+  if (frac < 0.3){ t.wob += dt; ax += Math.cos(t.wob*9) * 40 * (0.3-frac); ay += Math.sin(t.wob*9) * 40 * (0.3-frac); }
+  t.vx += ax*dt; t.vy += ay*dt;
+  const k = Math.exp(-t.T.damp * dt);
+  t.vx *= k; t.vy *= k;
+  t.x += t.vx*dt; t.y += t.vy*dt;
+  const dec = spinDecel(t) * dt;
+  t.w = Math.abs(t.w) <= dec ? 0 : t.w - Math.sign(t.w)*dec;
+  t.a += t.w*dt;
+  const rr = Math.hypot(t.x, t.y);
+  if (rr > ARENA_R){
+    const ph = Math.atan2(t.y, t.x);
+    const inGap = EXITS.some(e => Math.abs(Math.atan2(Math.sin(ph-e), Math.cos(ph-e))) < EXIT_HALF);
+    if (inGap && rr > ARENA_R + 6){ t.state = 'out'; }
+    else if (!inGap){
+      const ux = t.x/rr, uy = t.y/rr, vr = t.vx*ux + t.vy*uy;
+      if (vr > 0){ t.vx -= 1.5*vr*ux; t.vy -= 1.5*vr*uy; t.w -= Math.sign(t.w) * Math.min(Math.abs(t.w)*0.5, vr*0.02); t.wallHit = (t.wallHit||0) + 1; }
+      t.x = ux*ARENA_R; t.y = uy*ARENA_R;
+    }
+  }
+  else if (Math.abs(t.w) < 7){ t.state = 'stop'; }
+}
+
+function collide(A, B, onHit){
+  if (A.state !== 'spin' || B.state !== 'spin') return;
+  const dx = B.x - A.x, dy = B.y - A.y, d = Math.hypot(dx, dy) || 1e-6;
+  const ux = dx/d, uy = dy/d, px = -uy, py = ux;
+  const thA = Math.atan2(uy, ux) - A.a, thB = Math.atan2(-uy, -ux) - B.a;
+  const ca = rAt(A.prof, thA), cb = rAt(B.prof, thB);
+  const overlap = ca.r + cb.r - d;
+  if (overlap <= 0) return;
+  // outward normals of each outline at the contact (polar curve normal)
+  let nax = ca.r*ux - ca.dr*px, nay = ca.r*uy - ca.dr*py; let l = Math.hypot(nax, nay); nax /= l; nay /= l;
+  let nbx = cb.r*(-ux) - cb.dr*(-px), nby = cb.r*(-uy) - cb.dr*(-py); l = Math.hypot(nbx, nby); nbx /= l; nby /= l;
+  let nx = nax - nbx, ny = nay - nby; l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+  // positional separation
+  const iA = 1/A.m, iB = 1/B.m, s = overlap / (iA + iB);
+  A.x -= ux * s * iA; A.y -= uy * s * iA; B.x += ux * s * iB; B.y += uy * s * iB;
+  // contact arms
+  const rax = ux*ca.r, ray = uy*ca.r, rbx = -ux*cb.r, rby = -uy*cb.r;
+  const vax = A.vx - A.w*ray, vay = A.vy + A.w*rax;
+  const vbx = B.vx - B.w*rby, vby = B.vy + B.w*rbx;
+  const rvx = vbx - vax, rvy = vby - vay;
+  const vn = rvx*nx + rvy*ny;
+  if (vn >= 0) return;
+  const raXn = rax*ny - ray*nx, rbXn = rbx*ny - rby*nx;
+  const e = E_BASE + E_SPIKE * Math.min(1.5, Math.max(A.st.spiky, B.st.spiky));
+  const j = -(1 + e) * vn / (iA + iB + raXn*raXn/A.I + rbXn*rbXn/B.I);
+  const tx = -ny, ty = nx, vt = rvx*tx + rvy*ty;
+  const raXt = rax*ty - ray*tx, rbXt = rbx*ty - rby*tx;
+  let jt = -vt / (iA + iB + raXt*raXt/A.I + rbXt*rbXt/B.I);
+  const mu = 0.35; jt = Math.max(-mu*j, Math.min(mu*j, jt));
+  const Jx = nx*j + tx*jt, Jy = ny*j + ty*jt;
+  A.vx -= Jx*iA; A.vy -= Jy*iA; B.vx += Jx*iB; B.vy += Jy*iB;
+  // a single clash can only take a bite out of the spin, never flip it
+  const capW = (t, dw) => {
+    const lim = 0.12 * t.w0; dw = Math.max(-lim, Math.min(lim, dw));
+    const nw = t.w + dw;
+    t.w = Math.sign(nw) === Math.sign(t.w) ? nw : Math.sign(t.w) * 1;
+  };
+  capW(A, -(rax*Jy - ray*Jx) / A.I);
+  capW(B,  (rbx*Jy - rby*Jx) / B.I);
+  if (onHit) onHit(A.x + rax, A.y + ray, j);
+}
+
+function newBattle(me, foe, seed){
+  const A = makeTop(me, -120, 0, -1), B = makeTop(foe, 120, 0, 1);
+  const rnd = rngOf(seed == null ? 7 : seed);
+  launch(A, -1, rnd); launch(B, 1, rnd);
+  return { A, B, t: 0, over: false, winner: null, why: '' };
+}
+
+function stepBattle(G, onHit){
+  if (G.over) return;
+  stepTop(G.A, DT, G.B); stepTop(G.B, DT, G.A);
+  collide(G.A, G.B, onHit);
+  G.t += DT;
+  const a = G.A.state, b = G.B.state;
+  if (a !== 'spin' || b !== 'spin' || G.t >= T_LIMIT){
+    G.over = true;
+    if (a === 'spin' && b !== 'spin'){ G.winner = 'A'; G.why = b === 'out' ? '링아웃' : '회전 멈춤'; }
+    else if (b === 'spin' && a !== 'spin'){ G.winner = 'B'; G.why = a === 'out' ? '링아웃' : '회전 멈춤'; }
+    else if (a !== 'spin' && b !== 'spin'){ G.winner = Math.abs(G.A.w) >= Math.abs(G.B.w) ? 'A' : 'B'; G.why = '동시 탈락'; }
+    else { const ra = Math.abs(G.A.w)/W0, rb = Math.abs(G.B.w)/W0; G.winner = ra >= rb ? 'A' : 'B'; G.why = '판정 (남은 회전)'; }
+  }
+}
+
+/* stock shapes, normalized pad coords */
+const SH = {
+  circle(r){ const p = []; for (let i = 0; i <= 48; i++){ const a = i/48*Math.PI*2; p.push({ x:0.5 + r*Math.cos(a), y:0.5 + r*Math.sin(a) }); } return p; },
+  poly(n, r, rot){ const p = []; for (let i = 0; i <= n; i++){ const a = (rot||0) + i/n*Math.PI*2; p.push({ x:0.5 + r*Math.cos(a), y:0.5 + r*Math.sin(a) }); } return p; },
+  star(n, r1, r2){ const p = []; for (let i = 0; i <= n*2; i++){ const a = i/(n*2)*Math.PI*2 - Math.PI/2, r = i % 2 ? r2 : r1; p.push({ x:0.5 + r*Math.cos(a), y:0.5 + r*Math.sin(a) }); } return p; },
+  gear(n, r1, r2){ const p = []; for (let i = 0; i <= n*4; i++){ const a = i/(n*4)*Math.PI*2, r = (i % 4 < 2) ? r1 : r2; p.push({ x:0.5 + r*Math.cos(a), y:0.5 + r*Math.sin(a) }); } return p; },
+  bar(len){ return [{ x:0.5-len, y:0.5 }, { x:0.5+len, y:0.5 }]; },
+  cross(len){ return [{ x:0.5-len, y:0.5 }, { x:0.5+len, y:0.5 }, { x:0.5, y:0.5 }, { x:0.5, y:0.5-len }, { x:0.5, y:0.5+len }]; }
+};
+
+</script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const C = { paper:'#fbfaf4', rule:'#cfdcec', margin:'#eaa6a0', ink:'#1e2232', ink2:'#5d6275', red:'#d4402b', blue:'#2c5fa8' };
+const FONT = "Gaegu, 'Nanum Pen Script', cursive";
 const store = {
   get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : v; } catch(e){ return d; } },
   set(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
 };
-const dist = (a, b) => Math.hypot(a.x-b.x, a.y-b.y);
-const fmt = t => t.toFixed(2);
+
+/* ---------- ladder ---------- */
+const millstone = (() => { const p = SH.circle(0.41); p.push({ x:0.91, y:0.5 }, { x:0.97, y:0.5 }); return p; })();
+const LADDER = [
+  { name:'목수',            quote:'톱날 맛 좀 봐라',      spec:{ shape:SH.gear(8,0.41,0.32), b:2, t:1, d:1 } },
+  { name:'오락실 고수',      quote:'회전은 기세야',        spec:{ shape:SH.star(5,0.43,0.18), b:0, t:1, d:-1 } },
+  { name:'피자집 사장님',    quote:'도우는 넓을수록 좋지',  spec:{ shape:SH.circle(0.46), b:1, t:0, d:1 } },
+  { name:'문방구 사장님',    quote:'이거 원래 팔던 거야',   spec:{ shape:SH.poly(4,0.34,0.3), b:0, t:1, d:1 } },
+  { name:'태권도 관장',      quote:'막는 게 먼저다',       spec:{ shape:SH.circle(0.29), b:2, t:2, d:-1 } },
+  { name:'수학 선생님',      quote:'정삼각형은 완벽해',     spec:{ shape:SH.poly(3,0.4,-Math.PI/2), b:1, t:2, d:1 } },
+  { name:'맷돌 할머니',      quote:'다 갈아버린다',        spec:{ shape:millstone, b:2, t:2, d:-1 } },
+  { name:'전국대회 챔피언 꼬마', quote:'아저씨 팽이 처음 해봐요?', spec:{ shape:SH.circle(0.3), b:0, t:0, d:1 } }
+];
+let cleared = Math.min(LADDER.length, +store.get('tp_cleared', 0) || 0);
+
+/* ---------- token ---------- */
 function hashStr(s){ let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-
-function resample(pts, maxN, minStep){
-  let L = 0; for (let i = 1; i < pts.length; i++) L += dist(pts[i-1], pts[i]);
-  if (L < 1e-6) return pts.slice(0, 1);
-  const step = Math.max(minStep, L / maxN);
-  const out = [pts[0]]; let acc = 0, prev = pts[0];
-  for (let i = 1; i < pts.length; i++){
-    const cur = pts[i]; let d = dist(prev, cur);
-    while (acc + d >= step && d > 0){
-      const t = (step - acc) / d;
-      const np = { x: prev.x + (cur.x-prev.x)*t, y: prev.y + (cur.y-prev.y)*t };
-      out.push(np); prev = np; d = dist(prev, cur); acc = 0;
-    }
-    acc += d; prev = cur;
-  }
-  const last = pts[pts.length-1];
-  if (dist(out[out.length-1], last) > minStep * 0.3) out.push(last);
-  return out;
-}
-function strokeLen(pts){ let L = 0; for (let i = 1; i < pts.length; i++) L += dist(pts[i-1], pts[i]); return L; }
-
-/* local wheel points centred on approximate centre of mass */
-function localFromShape(sh){
-  let pts = sh.map(p => ({ x:(p.x-0.5)*WSCALE, y:(p.y-0.5)*WSCALE }));
-  pts = resample(pts, 34, 8);
-  let mx = 0, my = 0, ml = 0;
-  for (let i = 1; i < pts.length; i++){ const l = dist(pts[i-1], pts[i]); mx += (pts[i-1].x+pts[i].x)/2*l; my += (pts[i-1].y+pts[i].y)/2*l; ml += l; }
-  if (ml > 0){ mx /= ml; my /= ml; } else { mx = pts[0].x; my = pts[0].y; }
-  return pts.map(p => ({ x:p.x-mx, y:p.y-my }));
-}
-const radiusOf = loc => Math.max(10, ...loc.map(p => Math.hypot(p.x, p.y))) + TH/2;
-
-/* ---------- token for challenge links ---------- */
 function b64e(str){ const b = new TextEncoder().encode(str); let s = ''; b.forEach(x => s += String.fromCharCode(x)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 function b64d(t){ t = t.replace(/-/g,'+').replace(/_/g,'/'); while (t.length % 4) t += '='; const s = atob(t); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return new TextDecoder().decode(b); }
-function sig(o){ return (hashStr(JSON.stringify([o.n, o.t, o.s, o.w, 'wheel1'])) % 46656).toString(36); }
-function quant(sh){ const r = resample(sh, 24, 0.01); const w = []; r.forEach(p => w.push(Math.round(p.x*99), Math.round(p.y*99))); return w; }
-function dequant(w){ const out = []; for (let i = 0; i+1 < w.length; i += 2) out.push({ x:w[i]/99, y:w[i+1]/99 }); return out; }
-function makeTok(o){ return 'wr' + b64e(JSON.stringify({ n:o.n, t:o.t, s:o.s, w:o.w, k:sig(o) })); }
+function sig(o){ return (hashStr(JSON.stringify([o.n, o.w, o.b, o.t, o.d, o.c, 'top1'])) % 46656).toString(36); }
+function quant(sh){
+  const L = sh.length; const step = Math.max(1, Math.ceil(L / 60));
+  const w = []; for (let i = 0; i < L; i += step) w.push(Math.round(sh[i].x*99), Math.round(sh[i].y*99));
+  const last = sh[L-1]; w.push(Math.round(last.x*99), Math.round(last.y*99));
+  return w;
+}
+function dequant(w){ const o = []; for (let i = 0; i+1 < w.length; i += 2) o.push({ x:w[i]/99, y:w[i+1]/99 }); return o; }
+function makeTok(o){ return 'tp' + b64e(JSON.stringify({ ...o, k:sig(o) })); }
 function readTok(h){
   try {
-    if (!h || !h.startsWith('wr')) return null;
+    if (!h || !h.startsWith('tp')) return null;
     const o = JSON.parse(b64d(h.slice(2)));
-    if (typeof o.n !== 'string' || typeof o.t !== 'number' || !Array.isArray(o.s) || !Array.isArray(o.w)) return null;
-    if (o.s.length !== CPS.length || o.k !== sig(o)) return null;
+    if (typeof o.n !== 'string' || !Array.isArray(o.w) || o.w.length < 4) return null;
+    if (![0,1,2].includes(o.b) || ![0,1,2].includes(o.t) || ![1,-1].includes(o.d)) return null;
+    if (o.k !== sig(o)) return null;
     o.n = o.n.slice(0, 10) || '익명';
     return o;
   } catch(e){ return null; }
 }
 
-/* ---------- canvas sizing ---------- */
-const cv = $('cv'), ctx = cv.getContext('2d');
-const pad = $('pad'), pctx = pad.getContext('2d');
-let DPR = 1, W = 0, H = 0, S = 1, PS = 200;
-function resize(){
-  DPR = Math.min(2, window.devicePixelRatio || 1);
-  W = innerWidth; H = innerHeight;
-  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
-  S = Math.max(0.55, Math.min(1.5, W/560, H/640));
-  PS = Math.round(Math.max(130, Math.min(200, W - 48, H * 0.27)));
-  pad.style.width = pad.style.height = PS + 'px';
-  pad.width = pad.height = Math.round(PS*DPR);
-}
-addEventListener('resize', resize); resize();
-
-/* ---------- physics world (planck.js / Box2D, metres = px / PPM, y down) ---------- */
-const V = (x, y) => pl.Vec2(x / PPM, y / PPM);
-let world, chassis, wheels = [], wheelR = 20;
-let shape = null, local = null;
-const car = { x:START_X, y:0, a:0 };
-
-function buildWorld(){
-  world = new pl.World({ gravity: pl.Vec2(0, GRAV) });
-  const g = world.createBody();
-  for (const s of STRIPS) for (let i = 0; i < s.length-1; i++){
-    const a = s[i], b = s[i+1];
-    const e = pl.Edge(V(a[0], a[1]), V(b[0], b[1]));
-    if (i > 0) e.setPrevVertex(V(s[i-1][0], s[i-1][1]));
-    if (i < s.length-2) e.setNextVertex(V(s[i+2][0], s[i+2][1]));
-    const steep = Math.abs(b[1]-a[1]) > Math.abs(b[0]-a[0]) * 2;
-    g.createFixture(e, { friction: steep ? 0.12 : 0.9 });   // walls are slick: wheels must vault, not crawl
+/* ---------- top drawing helpers ---------- */
+function profilePath(g, prof, cx, cy, scale, ang){
+  g.beginPath();
+  for (let k = 0; k <= N; k++){
+    const th = k / N * Math.PI * 2 + ang, r = prof[k % N] * scale;
+    const x = cx + Math.cos(th) * r, y = cy + Math.sin(th) * r;
+    k ? g.lineTo(x, y) : g.moveTo(x, y);
   }
-  g.createFixture(pl.Box((CEIL.x2-CEIL.x1)/2/PPM, 150/PPM, V((CEIL.x1+CEIL.x2)/2, CEIL.y-150), 0), { friction: 0.3 });
-  chassis = world.createDynamicBody({ position: V(START_X, (groundY(START_X) || 0) - 30), allowSleep: false });
-  chassis.createFixture(pl.Box(50/PPM, 8/PPM), { density: 3, friction: 0.5, filterGroupIndex: -1 });
-  wheels = [];
-  snap();
+  g.closePath();
 }
-
-/* self-righting gyro keeps the doodle car from flipping on its own motor torque */
-function steady(){
-  const I = chassis.getInertia(), a = chassis.getAngle(), w = chassis.getAngularVelocity();
-  chassis.applyTorque(-(a * KEEP_K + w * KEEP_D) * I, true);
-}
-function snap(){ const p = chassis.getPosition(); car.x = p.x * PPM; car.y = p.y * PPM; car.a = chassis.getAngle(); }
-
-function wheelBody(loc, ax, ay){
-  const body = world.createDynamicBody({ position: V(ax, ay), allowSleep: false });
-  let n = 0;
-  for (let i = 1; i < loc.length; i++){
-    const a = loc[i-1], b = loc[i], len = dist(a, b);
-    if (len < 0.5) continue;
-    body.createFixture(pl.Box((len + TH*0.7)/2/PPM, TH/2/PPM, V((a.x+b.x)/2, (a.y+b.y)/2), Math.atan2(b.y-a.y, b.x-a.x)), { density: 0.35, friction: 1.2, filterGroupIndex: -1 });
-    n++;
+const TIP_COL = ['#1e2232', '#d4402b', '#2c5fa8'];
+function drawTop(g, prof, cx, cy, scale, ang, opt){
+  opt = opt || {};
+  g.save();
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  if (opt.blur){
+    for (let i = 3; i >= 1; i--){
+      g.globalAlpha = 0.09 * (opt.alpha ?? 1);
+      profilePath(g, prof, cx, cy, scale, ang - opt.blur * i);
+      g.fillStyle = C.ink; g.fill();
+    }
   }
-  if (n === 0) body.createFixture(pl.Circle(14/PPM), { density: 0.35, friction: 1.2, filterGroupIndex: -1 });
-  body.drawPts = n ? loc : null;
-  return body;
+  g.globalAlpha = opt.alpha ?? 1;
+  profilePath(g, prof, cx, cy, scale, ang);
+  g.fillStyle = opt.fill || C.paper; g.fill();
+  g.strokeStyle = C.ink; g.lineWidth = Math.max(1.6, 2.6 * scale); g.stroke();
+  // face mark so the spin reads
+  g.strokeStyle = opt.mark || C.red; g.lineWidth = Math.max(1.4, 2.4 * scale);
+  const mr = Math.min(...prof) * scale * 0.85;
+  g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(ang) * mr, cy + Math.sin(ang) * mr); g.stroke();
+  // bearing ring + tip dot
+  g.strokeStyle = C.ink; g.lineWidth = Math.max(1, 1.6 * scale);
+  g.beginPath(); g.arc(cx, cy, 7 * scale, 0, Math.PI*2); g.fillStyle = C.paper; g.fill(); g.stroke();
+  g.fillStyle = TIP_COL[opt.tip || 0];
+  g.beginPath(); g.arc(cx, cy, 3.4 * scale, 0, Math.PI*2); g.fill();
+  g.restore();
+}
+function thumb(cv, prof, opt){
+  const s = cv.clientWidth || 84, dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = s * dpr; cv.height = s * dpr;
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, s, s);
+  drawTop(g, prof, s/2, s/2, (s/2 - 4) / RMAX, -Math.PI/2, opt);
 }
 
-function attachWheels(lift){
-  for (const w of wheels) world.destroyBody(w);
-  wheels = [];
-  if (!local) return;
-  const newR = radiusOf(local);
-  if (lift){
-    const p = chassis.getPosition(), up = Math.max(0, newR - wheelR) + 4;
-    chassis.setTransform(pl.Vec2(p.x, p.y - up/PPM), chassis.getAngle());
-    const v = chassis.getLinearVelocity();
-    chassis.setLinearVelocity(pl.Vec2(v.x, Math.min(0, v.y)));
+/* ---------- stats ---------- */
+function soloSpin(spec){
+  const t = makeTop(spec, 0, 0, 1);
+  let time = 0;
+  while (Math.abs(t.w) > 7 && time < 60){ const dec = spinDecel(t) / 30; t.w -= Math.sign(t.w) * dec; time += 1/30; }
+  return time;
+}
+function statsOf(spec){
+  const prof = profileOf(spec.shape), st = shapeStats(prof);
+  const atk = Math.min(1, st.spiky / 0.9) * 0.75 + (spec.t === 1 ? 0.25 : spec.t === 0 ? 0.08 : 0);
+  const def = Math.min(1, (BEARINGS[spec.b].mass - 1) / 0.55 * 0.6 + (spec.t === 2 ? 0.3 : 0) + (1 - st.spiky) * 0.15);
+  const sta = Math.max(0, Math.min(1, (soloSpin(spec) - 6) / 34));
+  const v = { atk:Math.min(1, atk), def:Math.max(0, def), sta };
+  const top = Object.entries(v).sort((a, b) => b[1] - a[1]);
+  const label = top[0][1] - top[1][1] < 0.1 ? '밸런스형' : { atk:'공격형', def:'방어형', sta:'지구력형' }[top[0][0]];
+  return { ...v, label, prof };
+}
+
+/* ---------- prep UI ---------- */
+const pad = $('pad'), pg = pad.getContext('2d');
+let myShape = null, myB = 0, myT = 0, myD = 1, drawing = null;
+let foe = null;           // { name, quote, spec, idx, friend }
+let mode = 'home';
+
+function buildOpts(){
+  $('optB').innerHTML = BEARINGS.map((b, i) => `<button class="opt" data-v="${i}" aria-pressed="${i === myB}"><strong>${b.name}</strong><small>${b.desc}</small></button>`).join('');
+  $('optT').innerHTML = TIPS.map((t, i) => `<button class="opt" data-v="${i}" aria-pressed="${i === myT}"><strong>${t.name}</strong><small>${t.desc}</small></button>`).join('');
+}
+function wireGroup(id, set){
+  $(id).addEventListener('click', e => {
+    const b = e.target.closest('.opt'); if (!b) return;
+    $(id).querySelectorAll('.opt').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    set(+b.dataset.v); refreshStats(); store.set('tp_parts', JSON.stringify([myB, myT, myD]));
+  });
+}
+wireGroup('optB', v => myB = v);
+wireGroup('optT', v => myT = v);
+wireGroup('optD', v => myD = v);
+
+function padSize(){ const r = pad.getBoundingClientRect(); return Math.max(10, r.width); }
+function drawPad(){
+  const s = padSize(), dpr = Math.min(2, devicePixelRatio || 1);
+  if (pad.width !== Math.round(s*dpr)){ pad.width = pad.height = Math.round(s*dpr); }
+  pg.setTransform(dpr, 0, 0, dpr, 0, 0);
+  pg.fillStyle = C.paper; pg.fillRect(0, 0, s, s);
+  // guides: max reach circle and axis
+  const R = RMAX / TOPSCALE * s;
+  pg.setLineDash([4, 6]); pg.strokeStyle = C.rule; pg.lineWidth = 1.5;
+  pg.beginPath(); pg.arc(s/2, s/2, R, 0, Math.PI*2); pg.stroke(); pg.setLineDash([]);
+  if (myShape && !drawing){
+    const prof = profileOf(myShape);
+    pg.save(); pg.globalAlpha = 0.12; profilePath(pg, prof, s/2, s/2, s/TOPSCALE, 0); pg.fillStyle = C.ink; pg.fill(); pg.restore();
   }
-  wheelR = newR;
-  const p = chassis.getPosition(), ang = chassis.getAngle();
-  for (let i = 0; i < 2; i++){
-    const o = i ? AXLE : -AXLE;
-    const ax = p.x*PPM + o*Math.cos(ang), ay = p.y*PPM + o*Math.sin(ang);
-    const w = wheelBody(local, ax, ay);
-    w.setLinearVelocity(chassis.getLinearVelocity());
-    world.createJoint(pl.RevoluteJoint({ enableMotor: true, motorSpeed: MOTOR, maxMotorTorque: TORQUE }, chassis, w, V(ax, ay)));
-    wheels.push(w);
-  }
+  const line = pts => { if (!pts || pts.length < 2) return; pg.beginPath(); pts.forEach((p, i) => i ? pg.lineTo(p.x*s, p.y*s) : pg.moveTo(p.x*s, p.y*s)); pg.stroke(); };
+  pg.strokeStyle = C.ink; pg.lineWidth = 3.2; pg.lineCap = 'round'; pg.lineJoin = 'round';
+  line(drawing || myShape);
+  pg.strokeStyle = C.red; pg.lineWidth = 2;
+  pg.beginPath(); pg.moveTo(s/2-7, s/2); pg.lineTo(s/2+7, s/2); pg.moveTo(s/2, s/2-7); pg.lineTo(s/2, s/2+7); pg.stroke();
 }
-
-function placeCar(x, y){
-  chassis.setTransform(V(x, y), 0);
-  chassis.setLinearVelocity(pl.Vec2(0, 0));
-  chassis.setAngularVelocity(0);
-  attachWheels(false);
-  snap();
-}
-
-/* ---------- run state ---------- */
-let state = 'menu';   // menu | ready | run | done
-let R = null;         // current run
-let ghost = null;     // { name, t, s, loc }
-let camX = 0, camY = 0;
-
-function newRun(){
-  buildWorld();
-  wheelR = 20;
-  R = { t:0, cp:0, splits:[], resX:START_X, falls:0, redraws:0, msgT:0, msg:'' };
-  camX = START_X; camY = -60;
-  if (local){ attachWheels(true); state = 'run'; } else state = 'ready';
-  showPlayUI();
-}
-
-function respawn(why){
-  if (!R || state !== 'run') return;
-  const x = R.resX, gy = groundY(x) ?? 0;
-  placeCar(x, gy - wheelR - 14);
-  R.falls++;
-  flashSplit(why, 'bad');
-}
-
-function physicsStep(){
-  steady();
-  world.step(STEP, 10, 4);
-  snap();
-  if (state !== 'run') return;
-  R.t += STEP;
-  const cx = car.x;
-  while (R.cp < CPS.length && cx >= CPS[R.cp].x){
-    R.splits.push(R.t);
-    R.resX = CPS[R.cp].x;
-    if (ghost){
-      const d = R.t - ghost.s[R.cp];
-      flashSplit(CPS[R.cp].name + '  ' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)), d > 0 ? 'bad' : 'ok');
-    } else flashSplit(CPS[R.cp].name + ' 통과', 'ok');
-    R.cp++;
-    if (R.cp === CPS.length){ finish(); return; }
-  }
-  if (car.y > KILL_Y) respawn('추락! 깃발에서 다시');
-}
-
-let splitTimer = 0;
-function flashSplit(text, cls){
-  const el = $('split');
-  el.textContent = text; el.className = 'on ' + cls;
-  clearTimeout(splitTimer); splitTimer = setTimeout(() => el.className = '', 1600);
-}
-
-/* ---------- pad drawing ---------- */
-let drawing = null;
 function padPt(e){ const r = pad.getBoundingClientRect(); return { x:Math.min(1, Math.max(0, (e.clientX-r.left)/r.width)), y:Math.min(1, Math.max(0, (e.clientY-r.top)/r.height)) }; }
-pad.addEventListener('pointerdown', e => {
-  if (state !== 'ready' && state !== 'run') return;
-  e.preventDefault();
-  try { pad.setPointerCapture(e.pointerId); } catch(err){}
-  drawing = [padPt(e)];
-});
-pad.addEventListener('pointermove', e => {
-  if (!drawing) return;
-  const p = padPt(e);
-  if (dist(p, drawing[drawing.length-1]) > 0.008) drawing.push(p);
-});
+pad.addEventListener('pointerdown', e => { e.preventDefault(); try { pad.setPointerCapture(e.pointerId); } catch(err){} drawing = [padPt(e)]; drawPad(); });
+pad.addEventListener('pointermove', e => { if (!drawing) return; const p = padPt(e), l = drawing[drawing.length-1]; if (Math.hypot(p.x-l.x, p.y-l.y) > 0.006){ drawing.push(p); drawPad(); } });
 function endStroke(){
   if (!drawing) return;
   const st = drawing; drawing = null;
-  if (strokeLen(st) < 0.12) return;
-  shape = st; local = localFromShape(shape);
-  if (state === 'ready'){ attachWheels(true); state = 'run'; }
-  else if (state === 'run'){ attachWheels(true); R.redraws++; }
-  updatePadHint();
+  let L = 0; for (let i = 1; i < st.length; i++) L += Math.hypot(st[i].x-st[i-1].x, st[i].y-st[i-1].y);
+  if (L > 0.15){ myShape = st; store.set('tp_shape', JSON.stringify(quant(st))); }
+  drawPad(); refreshStats();
 }
 pad.addEventListener('pointerup', endStroke);
 pad.addEventListener('pointercancel', endStroke);
+$('clearBtn').addEventListener('click', () => { myShape = null; drawPad(); refreshStats(); });
 
-function updatePadHint(){
-  const h = $('padHint');
-  if (state === 'ready'){ h.textContent = '여기에 바퀴를 그려'; h.classList.add('call'); }
-  else { h.textContent = '언제든 다시 그리기'; h.classList.remove('call'); }
+function setBar(id, v){ $(id).style.width = Math.round(Math.max(0.04, v) * 100) + '%'; }
+function refreshStats(){
+  $('fireBtn').disabled = !myShape;
+  if (!myShape){ $('typeLabel').textContent = '아직 안 그림'; ['stAtk','stDef','stSta'].forEach(i => setBar(i, 0)); return; }
+  const s = statsOf({ shape:myShape, b:myB, t:myT, d:myD });
+  $('typeLabel').innerHTML = '내 팽이: <span>' + s.label + '</span>';
+  setBar('stAtk', s.atk); setBar('stDef', s.def); setBar('stSta', s.sta);
 }
 
-function drawPad(){
-  pctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  pctx.fillStyle = C.paper; pctx.fillRect(0, 0, PS, PS);
-  pctx.fillStyle = C.rule;
-  for (let x = 1; x < 8; x++) for (let y = 1; y < 8; y++){ pctx.beginPath(); pctx.arc(x*PS/8, y*PS/8, 1.4, 0, 7); pctx.fill(); }
-  const lw = TH * PS / WSCALE;
-  pctx.lineCap = 'round'; pctx.lineJoin = 'round';
-  const line = (pts, col, a) => { if (!pts || pts.length < 2) return; pctx.globalAlpha = a; pctx.strokeStyle = col; pctx.lineWidth = lw; pctx.beginPath(); pts.forEach((p, i) => i ? pctx.lineTo(p.x*PS, p.y*PS) : pctx.moveTo(p.x*PS, p.y*PS)); pctx.stroke(); pctx.globalAlpha = 1; };
-  line(shape, C.ink2, drawing ? 0.18 : 0.55);
-  line(drawing, C.ink, 1);
+function chipsFor(spec, hideDir){
+  return `<span class="chip">${BEARINGS[spec.b].name}</span><span class="chip">${TIPS[spec.t].name} 축</span>` +
+    (hideDir ? '<span class="chip hid">회전 ?</span>' : `<span class="chip">${spec.d > 0 ? '오른쪽 ↻' : '왼쪽 ↺'}</span>`);
 }
 
-/* ---------- rendering ---------- */
-function jt(i){ const h = Math.sin(i*12.9898) * 43758.5453; return (h - Math.floor(h) - 0.5) * 2; }
-
-function drawWheelShape(pts, x, y, ang, alpha){
-  ctx.globalAlpha = alpha;
-  ctx.strokeStyle = C.ink; ctx.lineWidth = TH; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  if (!pts){ ctx.beginPath(); ctx.arc(x, y, 14, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; return; }
-  const c = Math.cos(ang), s = Math.sin(ang);
-  ctx.beginPath();
-  pts.forEach((p, i) => { const px = x + p.x*c - p.y*s, py = y + p.x*s + p.y*c; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
-  ctx.stroke();
-  ctx.fillStyle = C.paper; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 7); ctx.fill(); ctx.stroke();
-  ctx.globalAlpha = 1;
+function openPrep(f){
+  foe = f; mode = 'prep';
+  const fs = foe.spec, prof = profileOf(fs.shape);
+  $('foeNo').textContent = foe.friend ? '도전장 · VS' : 'VS ' + (foe.idx + 1) + ' / ' + LADDER.length;
+  $('foeName').textContent = foe.name;
+  $('foeQuote').textContent = foe.quote ? '“' + foe.quote + '”' : '';
+  $('foeChips').innerHTML = chipsFor(fs, foe.friend);
+  buildOpts();
+  $('optD').querySelectorAll('.opt').forEach(x => x.setAttribute('aria-pressed', +x.dataset.v === myD ? 'true' : 'false'));
+  showScreen('prep');
+  thumb($('foeCv'), prof, { tip:fs.t });
+  requestAnimationFrame(() => { drawPad(); refreshStats(); });
 }
 
-function drawCarBody(x, y, ang, alpha, scarf){
-  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.globalAlpha = alpha;
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.fillStyle = C.paper;
-  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-50, -8, 100, 16, 6) : ctx.rect(-50, -8, 100, 16); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-30, -2); ctx.lineTo(30, -2); ctx.stroke();
-  // driver
-  ctx.beginPath(); ctx.arc(-4, -34, 8, 0, 7); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-4, -26); ctx.lineTo(-6, -8); ctx.moveTo(-5, -20); ctx.lineTo(14, -14); ctx.stroke();
-  if (scarf){ ctx.strokeStyle = C.red; ctx.lineWidth = 3; const f = Math.sin(performance.now()/90)*3; ctx.beginPath(); ctx.moveTo(-12, -37); ctx.lineTo(4, -37); ctx.moveTo(-12, -37); ctx.lineTo(-26, -33 + f); ctx.stroke(); }
-  ctx.restore(); ctx.globalAlpha = 1;
+/* ---------- battle ---------- */
+const cv = $('cv'), ctx = cv.getContext('2d');
+let DPR = 1, W = 0, H = 0;
+function resize(){ DPR = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR); if (mode === 'prep') drawPad(); }
+addEventListener('resize', resize); resize();
+
+let G = null, intro = 0, sparks = [], pops = [], shake = 0, endT = 0, lastSeed = 1;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function fight(seed){
+  lastSeed = seed;
+  const me = { shape:myShape, b:myB, t:myT, d:myD };
+  G = newBattle(me, foe.spec, seed);
+  intro = 1.6; sparks = []; pops = []; shake = 0; endT = 0;
+  mode = 'battle';
+  showScreen(null);
+  $('hud').hidden = false;
+  $('hMe').textContent = store.get('tp_name', '') || '나';
+  $('hFoe').textContent = foe.name;
 }
 
-function ghostX(t){
-  const pts = [[0, START_X], ...CPS.map((c, i) => [ghost.s[i], c.x])];
-  if (t >= pts[pts.length-1][0]) return FINISH + (t - pts[pts.length-1][0]) * 60;
-  for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]){ const [t0, x0] = pts[i-1], [t1, x1] = pts[i]; return x0 + (x1-x0) * (t-t0) / Math.max(1e-3, t1-t0); }
-  return START_X;
+function onHit(x, y, j){
+  const n = Math.min(10, 2 + Math.floor(j / 120));
+  for (let i = 0; i < n; i++){ const a = Math.random() * Math.PI * 2, v = 60 + Math.random() * 200 * Math.min(1.6, j/400); sparks.push({ x, y, vx:Math.cos(a)*v, vy:Math.sin(a)*v, life:0.35 + Math.random()*0.25 }); }
+  if (j > 500){ shake = Math.min(10, j / 120); pops.push({ x, y:y-20, text: j > 1100 ? '쾅!' : '깡!', life:0.6, big: j > 1100 }); }
 }
 
-let lastGhostY = 0;
+function arenaScale(){ return Math.min(W, H - 90) * 0.46 / (ARENA_R + 20); }
+
+function renderArena(sc, cx, cy){
+  // bowl rings
+  ctx.lineWidth = 1.5;
+  for (let r = 60; r < ARENA_R; r += 60){ ctx.strokeStyle = C.rule; ctx.beginPath(); ctx.arc(cx, cy, r*sc, 0, Math.PI*2); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(30,34,50,0.035)'; ctx.beginPath(); ctx.arc(cx, cy, ARENA_R*sc, 0, Math.PI*2); ctx.fill();
+  // rim with exits
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  const gaps = EXITS.map(e => [e - EXIT_HALF, e + EXIT_HALF]).sort((a, b) => a[0] - b[0]);
+  for (let i = 0; i < gaps.length; i++){
+    const from = gaps[i][1], to = gaps[(i+1) % gaps.length][0] + (i === gaps.length-1 ? Math.PI*2 : 0);
+    ctx.beginPath(); ctx.arc(cx, cy, ARENA_R*sc, from, to); ctx.stroke();
+  }
+  ctx.fillStyle = C.red; ctx.font = '700 ' + Math.round(15) + 'px ' + FONT; ctx.textAlign = 'center';
+  for (const e of EXITS){ ctx.fillText('출구', cx + Math.cos(e)*(ARENA_R+22)*sc, cy + Math.sin(e)*(ARENA_R+22)*sc + 5); }
+}
+
+function renderTopIn(t, sc, cx, cy, isMe){
+  let x = cx + t.x*sc, y = cy + t.y*sc, scale = sc, alpha = 1;
+  if (t.state === 'out'){ t.outT = (t.outT || 0) + 1/60; scale *= Math.max(0.15, 1 - t.outT*1.2); alpha = Math.max(0, 1 - t.outT*1.4); }
+  const frac = Math.abs(t.w) / t.w0;
+  let wob = 0;
+  if (t.state === 'spin' && frac < 0.35) wob = (0.35 - frac) * 0.35;
+  if (t.state === 'stop'){ t.stopT = (t.stopT || 0) + 1/60; wob = Math.min(0.5, t.stopT); }
+  ctx.save();
+  ctx.translate(x, y);
+  if (wob){ ctx.rotate(t.a * 0.1); ctx.scale(1, 1 - wob * 0.5); ctx.rotate(-t.a * 0.1); }
+  drawTop(ctx, t.prof, 0, 0, scale, t.a, { tip:t.T === TIPS[0] ? 0 : t.T === TIPS[1] ? 1 : 2, blur: t.state === 'spin' ? Math.min(0.35, Math.abs(t.w) * 0.004) * Math.sign(t.w) : 0, alpha, mark: isMe ? C.red : C.blue });
+  ctx.restore();
+}
+
 function render(dt){
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.fillStyle = C.paper; ctx.fillRect(0, 0, W, H);
-  if (chassis){
-    camX += (car.x + 90 - camX) * Math.min(1, dt*5);
-    camY += (car.y - camY) * Math.min(1, dt*4);
-  }
-  const tx = W*0.36 - camX*S, ty = H*0.36 - camY*S;
-  // ruled paper drifting with the camera
-  const gap = 30 * S;
   ctx.strokeStyle = C.rule; ctx.lineWidth = 1;
-  for (let y = ((ty % gap) + gap) % gap; y < H; y += gap){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-  ctx.strokeStyle = C.margin; ctx.lineWidth = 1.5;
-  const mx = ((tx + 20*S) % (900*S) + 900*S) % (900*S);
-  ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx, H); ctx.stroke();
+  for (let y = 32; y < H; y += 30){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.strokeStyle = C.margin; ctx.lineWidth = 1.5; const mx = Math.min(56, W*0.1); ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx, H); ctx.stroke();
 
-  ctx.setTransform(DPR*S, 0, 0, DPR*S, DPR*tx, DPR*ty);
-  // ground
-  for (const s of STRIPS){
-    ctx.beginPath(); s.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
-    ctx.fillStyle = 'rgba(30,34,50,0.06)'; ctx.fill();
-    ctx.save(); ctx.clip();
-    ctx.strokeStyle = 'rgba(30,34,50,0.13)'; ctx.lineWidth = 1.5;
-    const x0 = s[0][0], x1 = s[s.length-1][0];
-    for (let x = x0 - 800; x < x1; x += 16){ ctx.beginPath(); ctx.moveTo(x, -300); ctx.lineTo(x + 700, 400); ctx.stroke(); }
-    ctx.restore();
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 3.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.beginPath(); s.forEach((p, i) => { const jx = jt(p[0]*.7+p[1])*1.2, jy = jt(p[1]*.3+p[0])*1.2; i ? ctx.lineTo(p[0]+jx, p[1]+jy) : ctx.moveTo(p[0]+jx, p[1]+jy); }); ctx.stroke();
-  }
-  // ceiling
-  ctx.fillStyle = 'rgba(30,34,50,0.10)'; ctx.fillRect(CEIL.x1, CEIL.y-420, CEIL.x2-CEIL.x1, 420);
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 3.2;
-  ctx.beginPath(); ctx.moveTo(CEIL.x1, CEIL.y-420); ctx.lineTo(CEIL.x1, CEIL.y); ctx.lineTo(CEIL.x2, CEIL.y); ctx.lineTo(CEIL.x2, CEIL.y-420); ctx.stroke();
-  // labels
-  ctx.font = '700 22px ' + FONT; ctx.textAlign = 'left'; ctx.fillStyle = C.ink2;
-  for (const [x, y, t] of LABELS) ctx.fillText(t, x, y);
-  // checkpoint flags
-  CPS.forEach((c, i) => {
-    const gy = groundY(c.x) ?? 0, last = i === CPS.length-1, passed = R && R.cp > i;
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 2.4;
-    ctx.beginPath(); ctx.moveTo(c.x, gy); ctx.lineTo(c.x, gy - (last ? 120 : 80)); ctx.stroke();
-    if (last){
-      for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++){ ctx.fillStyle = (r+k) % 2 ? C.paper : C.ink; ctx.fillRect(c.x + k*11, gy - 120 + r*11, 11, 11); }
-      ctx.strokeRect(c.x, gy - 120, 44, 33);
-      ctx.fillStyle = C.red; ctx.font = '700 24px ' + FONT; ctx.fillText('도착', c.x + 50, gy - 96);
-    } else {
-      ctx.fillStyle = passed ? C.red : C.paper;
-      ctx.beginPath(); ctx.moveTo(c.x, gy-80); ctx.lineTo(c.x+30, gy-70); ctx.lineTo(c.x, gy-60); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = C.ink2; ctx.font = '700 16px ' + FONT; ctx.fillText(String(i+1), c.x - 12, gy - 64);
-    }
+  const sc = arenaScale();
+  const sh = reduce ? 0 : shake;
+  const cx = W/2 + (Math.random()-0.5)*sh, cy = H/2 + 30 + (Math.random()-0.5)*sh;
+  renderArena(sc, cx, cy);
+  if (!G || mode !== 'battle' && mode !== 'result') return;
+
+  renderTopIn(G.B, sc, cx, cy, false);
+  renderTopIn(G.A, sc, cx, cy, true);
+
+  ctx.fillStyle = C.ink;
+  for (const s of sparks){ ctx.globalAlpha = Math.min(1, s.life*3); ctx.beginPath(); ctx.arc(cx + s.x*sc, cy + s.y*sc, 2.2, 0, Math.PI*2); ctx.fill(); }
+  ctx.globalAlpha = 1; ctx.textAlign = 'center';
+  for (const p of pops){ ctx.globalAlpha = Math.min(1, p.life*3); ctx.fillStyle = p.big ? C.red : C.ink; ctx.font = '700 ' + (p.big ? 40 : 28) + 'px ' + FONT; ctx.fillText(p.text, cx + p.x*sc, cy + p.y*sc); }
+  ctx.globalAlpha = 1;
+
+  // name tags under tops while spinning
+  ctx.font = '700 17px ' + FONT;
+  [[G.A, store.get('tp_name','') || '나', C.red], [G.B, foe.name, C.blue]].forEach(([t, n, col]) => {
+    if (t.state !== 'spin') return; ctx.fillStyle = col; ctx.fillText(n, cx + t.x*sc, cy + t.y*sc + (t.st.rmax + 18)*sc + 6);
   });
-  // ghost
-  if (ghost && R && state !== 'menu'){
-    const gx = ghostX(R.t);
-    const gyRaw = groundY(gx);
-    if (gyRaw !== null) lastGhostY = gyRaw;
-    const gr = radiusOf(ghost.loc);
-    const by = lastGhostY - gr;
-    const ang = R.t * SPIN * 60;
-    drawWheelShape(ghost.drawPts, gx - AXLE, by, ang, 0.28);
-    drawWheelShape(ghost.drawPts, gx + AXLE, by, ang, 0.28);
-    drawCarBody(gx, by, 0, 0.3, false);
-    ctx.globalAlpha = 0.75; ctx.fillStyle = C.ink2; ctx.font = '700 18px ' + FONT; ctx.textAlign = 'center';
-    ctx.fillText(ghost.name, gx, by - 54); ctx.globalAlpha = 1; ctx.textAlign = 'left';
-  }
-  // player car
-  if (chassis){
-    for (const w of wheels){ const p = w.getPosition(); drawWheelShape(w.drawPts, p.x*PPM, p.y*PPM, w.getAngle(), 1); }
-    drawCarBody(car.x, car.y, car.a, 1, true);
+
+  if (intro > 0){
+    const n = Math.ceil(intro / 0.4);
+    ctx.fillStyle = n <= 1 ? C.red : C.ink; ctx.font = '700 ' + (n <= 1 ? 72 : 60) + 'px ' + FONT;
+    ctx.fillText(n <= 1 ? '고 슛!' : String(n - 1), cx, cy - ARENA_R*sc*0.35);
   }
 }
 
-/* ---------- loop ---------- */
-let last = performance.now(), acc = 0;
-function frame(now){
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if ((state === 'ready' || state === 'run') && world){
-    acc += dt; let n = 0;
-    while (acc >= STEP && n < 4){ physicsStep(); acc -= STEP; n++; }
-    if (n === 4) acc = 0;
-    $('time').textContent = fmt(R.t);
-  } else if (state === 'done' && world){
-    world.step(dt, 8, 3); snap();
+function tick(dt){
+  if (mode !== 'battle' && mode !== 'result') return;
+  for (const s of sparks){ s.life -= dt; s.x += s.vx*dt; s.y += s.vy*dt; s.vx *= 0.9; s.vy *= 0.9; }
+  sparks = sparks.filter(s => s.life > 0);
+  for (const p of pops){ p.life -= dt; p.y -= 30*dt; }
+  pops = pops.filter(p => p.life > 0);
+  shake = Math.max(0, shake - 30*dt);
+  if (mode !== 'battle') return;
+  if (intro > 0){ intro -= dt; return; }
+  if (!G.over){
+    const n = Math.round(dt / DT);
+    for (let i = 0; i < Math.min(n, 12) && !G.over; i++) stepBattle(G, onHit);
+  } else {
+    // let the loser finish falling / toppling
+    endT += dt;
+    if (G.A.state === 'spin') stepTop(G.A, dt);
+    if (G.B.state === 'spin') stepTop(G.B, dt);
+    if (endT > 1.1) showResult();
   }
-  render(dt);
-  if (state === 'ready' || state === 'run') drawPad();
+  $('spMe').style.width = Math.round(Math.max(0, Math.abs(G.A.w) / G.A.w0) * 100) + '%';
+  $('spFoe').style.width = Math.round(Math.max(0, Math.abs(G.B.w) / G.B.w0) * 100) + '%';
+  $('clock').textContent = Math.max(0, Math.ceil(T_LIMIT - G.t));
+}
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  tick(dt); render(dt);
   requestAnimationFrame(frame);
 }
 
-/* ---------- screens ---------- */
-const SCREENS = ['menu', 'chal', 'result'];
-function showScreen(id){ SCREENS.forEach(s => $(s).hidden = s !== id); }
-function showPlayUI(){
-  showScreen(null);
-  $('hud').hidden = false; $('padWrap').hidden = false; $('reset').hidden = false;
-  $('vs').textContent = ghost ? 'vs ' + ghost.name + ' ' + fmt(ghost.t) + '초' : '';
-  $('split').className = '';
-  updatePadHint();
-}
-function hidePlayUI(){ $('hud').hidden = true; $('padWrap').hidden = true; $('reset').hidden = true; }
-
-function loadBest(){ try { const b = JSON.parse(store.get('wr_best', 'null')); return b && Array.isArray(b.s) && b.s.length === CPS.length ? b : null; } catch(e){ return null; } }
-function ghostFrom(name, t, s, w){
-  const sh = dequant(w), loc = localFromShape(sh);
-  return { name, t, s, loc, drawPts: loc };
-}
-
-let opp = null;
-function refreshMenu(){
-  const b = loadBest();
-  $('bestLine').textContent = b
-    ? '내 최고 ' + fmt(b.t) + '초. 다시 달리면 내 최고 기록이 고스트로 같이 달린다.'
-    : '완주 기록을 카톡으로 보내면 친구는 내 고스트랑 같이 달린다.';
-}
-function startSolo(){
-  opp = null;
-  const b = loadBest();
-  ghost = b ? ghostFrom('내 최고', b.t, b.s, b.w) : null;
-  newRun();
-}
-function startVs(){ ghost = ghostFrom(opp.n, opp.t, opp.s, opp.w); newRun(); }
-
-function finish(){
-  state = 'done';
-  const t = R.t, splits = R.splits.slice();
-  const prev = loadBest();
-  const isBest = !prev || t < prev.t;
-  if (isBest) store.set('wr_best', JSON.stringify({ t, s:splits, w:quant(shape) }));
-  R.final = { t, splits, isBest, prev };
-  flashSplit('도착!', 'ok');
-  setTimeout(showResult, 900);
-}
-
-function segs(arr){ return arr.map((v, i) => v - (i ? arr[i-1] : 0)); }
-
+/* ---------- result ---------- */
 function showResult(){
-  hidePlayUI();
-  const { t, splits, isBest, prev } = R.final;
-  const v = $('verdict'), tip = $('tip'), sub = $('resSub');
-  v.classList.remove('win'); tip.hidden = true;
-  const mine = segs(splits);
-  let rows = '', theirs = null;
-  if (ghost) theirs = segs(ghost.s);
-  let worst = -1, worstD = 0, best = -1, bestD = 0;
-  CPS.forEach((c, i) => {
-    let dCell = '', cls = '';
-    if (theirs){
-      const d = mine[i] - theirs[i];
-      if (d > worstD){ worstD = d; worst = i; }
-      if (d < bestD){ bestD = d; best = i; }
-      cls = d > 0.005 ? 'bad' : 'ok';
-      dCell = '<td class="' + cls + '">' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)) + '</td>';
-    }
-    rows += '<tr data-i="' + i + '"><td>' + (i+1) + '. ' + c.name + '</td><td>' + fmt(mine[i]) + '</td>' + (theirs ? '<td>' + fmt(theirs[i]) + '</td>' + dCell : '') + '</tr>';
-  });
-  const head = '<tr><th>구간</th><th>나</th>' + (theirs ? '<th>' + ghost.name + '</th><th>차이</th>' : '') + '</tr>';
-  $('segTbl').innerHTML = head + rows;
-  if (worst >= 0) $('segTbl').querySelector('tr[data-i="' + worst + '"]').classList.add('worst');
+  mode = 'result';
+  $('hud').hidden = true;
+  const win = G.winner === 'A';
+  const v = $('verdict');
+  v.textContent = win ? '이겼다' : '졌다'; v.classList.toggle('win', win);
+  const loserMe = !win;
+  const why = G.why;
+  let line = '';
+  if (why === '링아웃') line = loserMe ? '출구로 날아갔다.' : foe.name + '의 팽이가 출구로 날아갔다.';
+  else if (why === '회전 멈춤') line = loserMe ? '먼저 쓰러졌다.' : foe.name + '의 팽이가 먼저 쓰러졌다.';
+  else if (why.startsWith('판정')) line = '15초 버팀. 남은 회전으로 ' + (win ? '판정승.' : '판정패.');
+  else line = '둘 다 쓰러졌다. 끝까지 돈 쪽 ' + (win ? '승리.' : '패배.');
+  $('resWhy').textContent = line;
+  $('resEyebrow').textContent = foe.friend ? foe.name + '님의 도전장' : (foe.idx + 1) + '번째 상대 · ' + foe.name;
 
-  if (opp){
-    const diff = t - opp.t;
-    $('resEyebrow').textContent = opp.n + '님과의 대결 · 개장애물 1코스';
-    if (diff < 0){
-      v.textContent = '이겼다 ' + fmt(t) + '초'; v.classList.add('win');
-      sub.textContent = opp.n + '님보다 ' + fmt(-diff) + '초 빨랐다.' + (best >= 0 ? ' ' + CPS[best].name + '에서 ' + fmt(-bestD) + '초 벌었다.' : '');
-      $('shareBtn').textContent = '카톡으로 이겼다고 알리기';
-    } else {
-      v.textContent = '졌다 ' + fmt(t) + '초';
-      sub.textContent = fmt(diff) + '초 차이. 같은 코스니까 바퀴만 바꾸면 된다.';
-      $('shareBtn').textContent = '카톡으로 도전장 보내기';
-    }
-    if (worst >= 0 && diff > 0){
-      tip.hidden = false;
-      tip.textContent = CPS[worst].name + '에서 ' + fmt(worstD) + '초 잃었다. ' + (worstD >= diff ? '거기만 잡으면 이긴다.' : '제일 크게 밀린 구간이다.');
-    }
-  } else {
-    $('resEyebrow').textContent = '개장애물 1코스 · 완주';
-    v.textContent = fmt(t) + '초';
-    if (isBest){
-      v.classList.add('win');
-      sub.textContent = prev ? '최고 기록 경신. 이전보다 ' + fmt(prev.t - t) + '초 빨랐다.' : '첫 완주. 이 기록을 친구한테 던질 차례.';
-    } else {
-      sub.textContent = '내 최고 ' + fmt(prev.t) + '초. ' + fmt(t - prev.t) + '초 차이.';
-      if (worst >= 0){ tip.hidden = false; tip.textContent = CPS[worst].name + '에서 ' + fmt(worstD) + '초 잃었다. ' + (worstD >= t - prev.t ? '거기만 잡으면 기록 경신.' : '제일 크게 밀린 구간이다.'); }
-    }
-    $('shareBtn').textContent = '카톡으로 도전장 보내기';
-  }
+  const nextBtn = $('nextBtn');
+  if (!foe.friend && win && foe.idx >= cleared){ cleared = foe.idx + 1; store.set('tp_cleared', cleared); }
+  if (foe.friend){ nextBtn.textContent = '사다리 하러 가기'; nextBtn.hidden = false; }
+  else if (win && foe.idx + 1 < LADDER.length){ nextBtn.textContent = '다음 상대'; nextBtn.hidden = false; }
+  else if (win){ nextBtn.textContent = '처음으로'; nextBtn.hidden = false; v.textContent = '8명 전부 격파'; }
+  else nextBtn.hidden = true;
+  $('againBtn').textContent = win ? '한 번 더' : '다시 붙기';
+
+  $('shareBox').hidden = !win;
   $('toast').textContent = ''; $('copyOut').hidden = true;
-  $('nm').value = store.get('wr_name', '');
+  $('nm').value = store.get('tp_name', '');
+  if (foe.friend && win) $('shareBtn').textContent = '카톡으로 이겼다고 알리기';
+  else $('shareBtn').textContent = '카톡으로 도전장 보내기';
   showScreen('result');
 }
 
-function baseLink(){
-  if (BASE_URL) return BASE_URL;
-  try { return location.href.split('#')[0]; } catch(e){ return ''; }
-}
+function baseLink(){ try { return location.href.split('#')[0]; } catch(e){ return ''; } }
 function shareText(){
   const name = ($('nm').value.trim() || '익명').slice(0, 8);
-  store.set('wr_name', name === '익명' ? '' : name);
-  const { t, splits } = R.final;
-  const tok = makeTok({ n:name, t:Math.round(t*100)/100, s:splits.map(x => Math.round(x*100)/100), w:quant(shape) });
+  store.set('tp_name', name === '익명' ? '' : name);
+  const tok = makeTok({ n:name, w:quant(myShape), b:myB, t:myT, d:myD, c:cleared });
   const link = baseLink() + '#' + tok;
-  if (opp && t < opp.t)
-    return '🛞 낙서 바퀴\n' + opp.n + ' ' + fmt(opp.t) + '초 → ' + name + ' ' + fmt(t) + '초. 깼다.\n내 바퀴 보고 따라와봐\n' + link;
-  return '🛞 낙서 바퀴 도전장\n' + name + ' ' + fmt(t) + '초 완주\n바퀴 하나 잘 그리면 이김. 넘어봐\n' + link;
+  const kind = statsOf({ shape:myShape, b:myB, t:myT, d:myD }).label;
+  if (foe.friend) return '🌀 낙서 팽이\n' + foe.name + ' 팽이 깼다. 이번엔 내 ' + kind + ' 팽이다\n회전 방향은 비밀. 이겨봐\n' + link;
+  return '🌀 낙서 팽이 도전장\n' + name + '의 ' + kind + ' 팽이 (' + cleared + '/8 격파)\n부품은 다 보여줌. 회전 방향만 비밀. 이겨봐\n' + link;
 }
-
 $('shareBtn').addEventListener('click', () => {
   const text = shareText();
-  const fallback = () => {
-    const ta = $('copyOut'); ta.hidden = false; ta.value = text; ta.focus(); ta.select();
-    $('toast').textContent = '자동 복사가 막혔다. 아래 글을 길게 눌러 복사해서 카톡에 붙여넣기.';
-  };
-  try {
-    navigator.clipboard.writeText(text).then(() => { $('toast').textContent = '복사됨. 카톡 대화방에 붙여넣으면 도전장 완성.'; $('copyOut').hidden = true; }, fallback);
-  } catch(e){ fallback(); }
+  const fallback = () => { const ta = $('copyOut'); ta.hidden = false; ta.value = text; ta.focus(); ta.select(); $('toast').textContent = '자동 복사가 막혔다. 아래 글을 길게 눌러 복사해서 카톡에 붙여넣기.'; };
+  try { navigator.clipboard.writeText(text).then(() => { $('toast').textContent = '복사됨. 카톡 대화방에 붙여넣으면 도전장 완성.'; $('copyOut').hidden = true; }, fallback); } catch(e){ fallback(); }
 });
-$('startBtn').addEventListener('click', startSolo);
-$('acceptBtn').addEventListener('click', startVs);
-$('soloBtn').addEventListener('click', () => { opp = null; refreshMenu(); showScreen('menu'); });
-$('againBtn').addEventListener('click', () => {
-  if (opp) startVs();
-  else { const b = loadBest(); ghost = b ? ghostFrom('내 최고', b.t, b.s, b.w) : null; newRun(); }
+
+/* ---------- navigation ---------- */
+const SCREENS = ['home', 'chal', 'prep', 'result'];
+function showScreen(id){ SCREENS.forEach(s => $(s).hidden = s !== id); if (id) $('hud').hidden = true; }
+
+function renderLadder(){
+  const ul = $('ladder');
+  ul.innerHTML = LADDER.map((o, i) => {
+    const st = i < cleared ? '<span class="st done">격파</span>' : i === cleared ? '<span class="st">다음</span>' : '<span class="st"></span>';
+    const cls = i === cleared ? 'next' : i > cleared ? 'locked' : '';
+    return `<li class="${cls}"><span class="no">${i+1}</span><canvas data-i="${i}" aria-hidden="true"></canvas><span><span class="nm">${o.name}</span><br><span class="tag">${BEARINGS[o.spec.b].name} · ${TIPS[o.spec.t].name} 축</span></span>${st}</li>`;
+  }).join('');
+  ul.querySelectorAll('canvas').forEach(c => { const o = LADDER[+c.dataset.i]; thumb(c, profileOf(o.spec.shape), { tip:o.spec.t }); });
+  $('goBtn').textContent = cleared >= LADDER.length ? '처음부터 다시' : (cleared + 1) + '번 상대에게 도전';
+}
+function goHome(){ mode = 'home'; G = null; renderLadder(); showScreen('home'); }
+function ladderFoe(i){ const o = LADDER[i]; return { name:o.name, quote:o.quote, spec:o.spec, idx:i, friend:false }; }
+
+$('goBtn').addEventListener('click', () => {
+  if (cleared >= LADDER.length){ cleared = 0; store.set('tp_cleared', 0); }
+  openPrep(ladderFoe(Math.min(cleared, LADDER.length - 1)));
 });
-$('homeBtn').addEventListener('click', () => { state = 'menu'; opp = null; ghost = null; R = null; refreshMenu(); hidePlayUI(); showScreen('menu'); });
-$('reset').addEventListener('click', () => respawn('깃발에서 다시'));
+$('backBtn').addEventListener('click', () => { if (foe && foe.friend) showScreen('chal'); else goHome(); });
+$('fireBtn').addEventListener('click', () => { if (myShape) fight((Math.random() * 1e9) | 0); });
+$('againBtn').addEventListener('click', () => fight((Math.random() * 1e9) | 0));
+$('editBtn').addEventListener('click', () => openPrep(foe));
+$('nextBtn').addEventListener('click', () => {
+  if (foe.friend){ goHome(); return; }
+  if (foe.idx + 1 < LADDER.length && G && G.winner === 'A') openPrep(ladderFoe(foe.idx + 1));
+  else goHome();
+});
 $('nm').addEventListener('keydown', e => e.stopPropagation());
 
-function drawChalPreview(sh){
-  const c = $('chalCv'), x = c.getContext('2d'), s = 96;
-  c.width = c.height = s * DPR; x.setTransform(DPR, 0, 0, DPR, 0, 0);
-  x.fillStyle = C.paper; x.fillRect(0, 0, s, s);
-  x.strokeStyle = C.ink; x.lineWidth = TH * s / WSCALE; x.lineCap = 'round'; x.lineJoin = 'round';
-  x.beginPath(); sh.forEach((p, i) => i ? x.lineTo(p.x*s, p.y*s) : x.moveTo(p.x*s, p.y*s)); x.stroke();
-}
+let friend = null;
+$('chalGo').addEventListener('click', () => openPrep(friend));
+$('chalSkip').addEventListener('click', goHome);
 
 function route(){
   const o = readTok(location.hash.slice(1));
   if (o){
-    opp = o;
-    $('chalName').textContent = o.n;
-    $('chalTime').textContent = fmt(o.t);
-    drawChalPreview(dequant(o.w));
-    showScreen('chal');
-  } else { refreshMenu(); showScreen('menu'); }
+    friend = { name:o.n, quote:'', spec:{ shape:dequant(o.w), b:o.b, t:o.t, d:o.d }, idx:-1, friend:true };
+    $('chalName').textContent = o.n + '님의 팽이';
+    $('chalChips').innerHTML = chipsFor(friend.spec, true) + `<span class="chip">${o.c || 0}/8 격파</span>`;
+    $('chalSub').textContent = statsOf(friend.spec).label + '. 부품은 다 보인다. 회전 방향만 숨겨져 있다.';
+    showScreen('chal'); mode = 'chal';
+    thumb($('chalCv'), profileOf(friend.spec.shape), { tip:o.t });
+  } else goHome();
 }
-addEventListener('hashchange', () => { if (state === 'menu' || state === 'done') { hidePlayUI(); state = 'menu'; route(); } });
+addEventListener('hashchange', () => { if (mode !== 'battle') route(); });
 
-buildWorld();
+/* restore last drawing & parts */
+try { const w = JSON.parse(store.get('tp_shape', 'null')); if (Array.isArray(w) && w.length >= 4) myShape = dequant(w); } catch(e){}
+try { const p = JSON.parse(store.get('tp_parts', 'null')); if (Array.isArray(p)){ myB = p[0] | 0; myT = p[1] | 0; myD = p[2] === -1 ? -1 : 1; } } catch(e){}
+
 route();
 requestAnimationFrame(frame);
 })();
 </script>
-
 </body>
 </html>
