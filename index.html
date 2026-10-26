@@ -56,6 +56,8 @@ p{margin:0;line-height:1.55}
 .tool{flex:1;font-family:var(--display);font-weight:700;font-size:18px;padding:4px 0;border:2px solid var(--ink);border-radius:10px;background:var(--paper);color:var(--ink);cursor:pointer}
 .tool[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .tool:disabled{opacity:.35;cursor:default}
+.tool.photo{flex:none;width:min(270px,74vw);font-size:17px;border-style:dashed}
+.padhint.err{color:var(--red)}
 .padhint{font-size:12.5px;color:var(--ink2);text-align:center}
 
 .stats{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center;font-size:13px}
@@ -165,7 +167,9 @@ p{margin:0;line-height:1.55}
         <button class="tool" id="undoBtn">되돌리기</button>
         <button class="tool" id="wipeBtn">전부</button>
       </div>
-      <div class="padhint">위에서 본 모양. 빨간 + 가 회전축, 점선 밖은 안 닿는다</div>
+      <button class="tool photo" id="photoBtn">사진에서 모양 따기</button>
+      <input type="file" id="photoIn" accept="image/*" hidden>
+      <div class="padhint" id="padHint">위에서 본 모양. 빨간 + 가 회전축, 점선 밖은 안 닿는다</div>
     </div>
 
     <div class="typeLabel" id="typeLabel">아직 안 그림</div>
@@ -703,6 +707,135 @@ function endStroke(){
 pad.addEventListener('pointerup', endStroke);
 pad.addEventListener('pointercancel', endStroke);
 pad.addEventListener('pointerleave', () => { eraserAt = null; drawPad(); });
+
+/* photo -> outer contour stroke (normalized pad coords, centred on the object's centre of mass) */
+function outlineFromPixels(d, S, rect){
+  const [x0, y0, x1, y1] = rect;
+  const inR = (x, y) => x >= x0 && x < x1 && y >= y0 && y < y1;
+  const mask = new Uint8Array(S*S);
+  // 1) foreground: alpha if the picture has real transparency, else distance from the border colour
+  let transp = 0, tot = 0;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++){ tot++; if (d[(y*S+x)*4+3] < 128) transp++; }
+  if (transp > tot * 0.03 && transp < tot * 0.97){
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) mask[y*S+x] = d[(y*S+x)*4+3] >= 128 ? 1 : 0;
+  } else {
+    const rs = [], gs = [], bs = [];
+    const take = (x, y) => { const i = (y*S+x)*4; rs.push(d[i]); gs.push(d[i+1]); bs.push(d[i+2]); };
+    for (let x = x0; x < x1; x++){ take(x, y0); take(x, y1-1); }
+    for (let y = y0; y < y1; y++){ take(x0, y); take(x1-1, y); }
+    const med = a => { a.sort((p, q) => p - q); return a[a.length >> 1]; };
+    const br = med(rs), bg = med(gs), bb = med(bs);
+    const dist = new Float32Array(S*S), hist = new Array(64).fill(0);
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++){
+      const i = (y*S+x)*4, v = Math.hypot(d[i]-br, d[i+1]-bg, d[i+2]-bb);
+      dist[y*S+x] = v; hist[Math.min(63, v / 442 * 64 | 0)]++;
+    }
+    // Otsu threshold on colour distance
+    let sum = 0, n = 0; for (let k = 0; k < 64; k++){ sum += k*hist[k]; n += hist[k]; }
+    let sB = 0, wB = 0, best = 0, th = 8;
+    for (let k = 0; k < 64; k++){
+      wB += hist[k]; if (!wB) continue; const wF = n - wB; if (!wF) break;
+      sB += k*hist[k]; const mB = sB / wB, mF = (sum - sB) / wF, v = wB*wF*(mB-mF)*(mB-mF);
+      if (v > best){ best = v; th = k; }
+    }
+    const thr = Math.max(28, (th + 0.5) * 442 / 64);
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) mask[y*S+x] = dist[y*S+x] > thr ? 1 : 0;
+  }
+  // 2) close small gaps: dilate then erode
+  const morph = (src, grow) => {
+    const out = new Uint8Array(S*S);
+    for (let y = 1; y < S-1; y++) for (let x = 1; x < S-1; x++){
+      let any = 0, all = 1;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){ const v = src[(y+dy)*S + x+dx]; any |= v; all &= v; }
+      out[y*S+x] = grow ? any : all;
+    }
+    return out;
+  };
+  let m = morph(morph(mask, true), false);
+  // 3) keep the biggest blob
+  const lab = new Int32Array(S*S); let bestId = 0, bestN = 0, id = 0;
+  const stack = [];
+  for (let s = 0; s < S*S; s++){
+    if (!m[s] || lab[s]) continue;
+    id++; let cnt = 0; stack.push(s); lab[s] = id;
+    while (stack.length){
+      const p = stack.pop(); cnt++;
+      const x = p % S, y = (p / S) | 0;
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const nx = x+dx, ny = y+dy; if (nx < 0 || ny < 0 || nx >= S || ny >= S) continue;
+        const q = ny*S + nx; if (m[q] && !lab[q]){ lab[q] = id; stack.push(q); }
+      }
+    }
+    if (cnt > bestN){ bestN = cnt; bestId = id; }
+  }
+  if (bestN < S*S*0.01) return { err:'물체를 못 찾았어. 배경이 단순한 사진이 잘 돼.' };
+  for (let s = 0; s < S*S; s++) m[s] = lab[s] === bestId ? 1 : 0;
+  // 4) fill holes: anything the outside can't reach is solid
+  const reach = new Uint8Array(S*S);
+  for (let x = 0; x < S; x++){ stack.push(x, (S-1)*S + x); }
+  for (let y = 0; y < S; y++){ stack.push(y*S, y*S + S-1); }
+  while (stack.length){
+    const p = stack.pop(); if (reach[p] || m[p]) continue; reach[p] = 1;
+    const x = p % S, y = (p / S) | 0;
+    if (x > 0) stack.push(p-1); if (x < S-1) stack.push(p+1); if (y > 0) stack.push(p-S); if (y < S-1) stack.push(p+S);
+  }
+  let cx = 0, cy = 0, area = 0;
+  for (let s = 0; s < S*S; s++){ if (!reach[s]){ m[s] = 1; cx += s % S; cy += (s / S) | 0; area++; } else m[s] = 0; }
+  cx /= area; cy /= area;
+  let touch = 0; for (let x = x0; x < x1; x++){ touch += m[y0*S+x] + m[(y1-1)*S+x]; }
+  if (touch > (x1-x0) * 1.2) return { err:'배경이랑 물체가 잘 안 갈려. 단색 배경에서 찍은 사진으로 해봐.' };
+  // 5) trace the outer boundary (Moore neighbourhood)
+  let start = -1;
+  for (let s = 0; s < S*S && start < 0; s++) if (m[s]) start = s;
+  const D = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+  const at = (x, y) => x >= 0 && y >= 0 && x < S && y < S && m[y*S+x];
+  let x = start % S, y = (start / S) | 0, dir = 0;
+  const sx = x, sy = y, pts = [{ x, y }];
+  for (let guard = 0; guard < S*S*2; guard++){
+    let moved = false;
+    for (let k = 0; k < 8; k++){
+      const nd = (dir + 6 + k) % 8, nx = x + D[nd][0], ny = y + D[nd][1];
+      if (at(nx, ny)){ x = nx; y = ny; dir = nd; moved = true; break; }
+    }
+    if (!moved) break;
+    if (x === sx && y === sy) break;
+    pts.push({ x, y });
+  }
+  if (pts.length < 8) return { err:'모양이 너무 작아. 물체가 크게 나온 사진으로 해봐.' };
+  // 6) centre on the centre of mass (= spin axis) and scale to the reach circle
+  let maxR = 0; for (const p of pts) maxR = Math.max(maxR, Math.hypot(p.x - cx, p.y - cy));
+  const k = 0.49 / (maxR || 1);
+  const stroke = pts.map(p => ({ x: 0.5 + (p.x - cx) * k, y: 0.5 + (p.y - cy) * k }));
+  stroke.push(stroke[0]);
+  return { stroke };
+}
+
+const HINT0 = '위에서 본 모양. 빨간 + 가 회전축, 점선 밖은 안 닿는다';
+function hint(t, err){ const h = $('padHint'); h.textContent = t || HINT0; h.classList.toggle('err', !!err); }
+$('photoBtn').addEventListener('click', () => { snd.click(); $('photoIn').click(); });
+$('photoIn').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  hint('외곽선 따는 중…');
+  try {
+    const url = URL.createObjectURL(f);
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const S = 160, c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    const k = Math.min((S - 8) / img.width, (S - 8) / img.height), w = Math.max(1, Math.round(img.width*k)), h = Math.max(1, Math.round(img.height*k));
+    const x0 = (S - w) >> 1, y0 = (S - h) >> 1;
+    g.drawImage(img, x0, y0, w, h);
+    URL.revokeObjectURL(url);
+    const r = outlineFromPixels(g.getImageData(0, 0, S, S).data, S, [x0, y0, x0 + w, y0 + h]);
+    if (r.err){ hint(r.err, true); snd.lose(); return; }
+    pushUndo();
+    strokes = [rdp(r.stroke, 0.004)];
+    snd.win(); hint('외곽선을 땄다. 펜과 지우개로 손봐도 된다.');
+    afterEdit();
+    setTimeout(() => hint(), 4000);
+  } catch(err){ hint('이미지를 못 읽었어. 다른 사진으로 해봐.', true); }
+});
+
 function afterEdit(){ $('undoBtn').disabled = !undoStack.length; $('wipeBtn').disabled = !strokes.length; drawPad(); refreshStats(); saveMine(); }
 
 function drawPad(){
