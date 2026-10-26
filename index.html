@@ -167,7 +167,10 @@ p{margin:0;line-height:1.55}
         <button class="tool" id="undoBtn">되돌리기</button>
         <button class="tool" id="wipeBtn">전부</button>
       </div>
-      <button class="tool photo" id="photoBtn">그림·사진에서 모양 따기</button>
+      <div class="tools">
+        <button class="tool" id="photoBtn">이미지 열기</button>
+        <button class="tool" id="pasteBtn">이미지 붙여넣기</button>
+      </div>
       <input type="file" id="photoIn" accept="image/*" hidden>
       <div class="padhint" id="padHint">위에서 본 모양. 빨간 + 가 회전축, 점선 밖은 안 닿는다</div>
     </div>
@@ -831,12 +834,52 @@ function outlineFromPixels(d, S, rect){
   return { strokes, lineArt };
 }
 
-const HINT0 = '위에서 본 모양. 빨간 + 가 회전축, 점선 밖은 안 닿는다';
+const HINT0 = '위에서 본 모양. 빨간 + 가 회전축. 이미지를 붙여넣거나 끌어다 놓아도 된다';
 function hint(t, err){ const h = $('padHint'); h.textContent = t || HINT0; h.classList.toggle('err', !!err); }
 $('photoBtn').addEventListener('click', () => { snd.click(); $('photoIn').click(); });
-$('photoIn').addEventListener('change', async e => {
+$('photoIn').addEventListener('change', e => {
   const f = e.target.files && e.target.files[0]; e.target.value = '';
-  if (!f) return;
+  if (f) traceImage(f);
+});
+/* paste (Ctrl+V / long-press paste) and drag-and-drop onto the page while the workshop is open */
+function imageFromList(items){
+  for (const it of items || []){
+    if (it.kind === 'file' && it.type.startsWith('image/')) return it.getAsFile();
+    if (it instanceof File && it.type.startsWith('image/')) return it;
+  }
+  return null;
+}
+document.addEventListener('paste', e => {
+  if (mode !== 'prep') return;
+  if (e.target && e.target.tagName === 'INPUT') return;
+  const f = imageFromList(e.clipboardData && e.clipboardData.items);
+  if (f){ e.preventDefault(); traceImage(f); }
+  else hint('붙여넣은 게 이미지가 아니야. 이미지를 복사한 뒤 붙여넣어줘.', true);
+});
+document.addEventListener('dragover', e => { if (mode === 'prep'){ e.preventDefault(); pad.style.outline = '3px dashed var(--red)'; } });
+document.addEventListener('dragleave', () => { pad.style.outline = ''; });
+document.addEventListener('drop', e => {
+  if (mode !== 'prep') return;
+  e.preventDefault(); pad.style.outline = '';
+  const f = imageFromList(e.dataTransfer && (e.dataTransfer.files.length ? e.dataTransfer.files : e.dataTransfer.items));
+  if (f) traceImage(f); else hint('이미지 파일을 끌어다 놓아줘.', true);
+});
+/* explicit paste button for phones: reads the clipboard when the browser allows it */
+$('pasteBtn').addEventListener('click', async () => {
+  snd.click();
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.read) throw 0;
+    const items = await navigator.clipboard.read();
+    for (const it of items){
+      const t = it.types.find(x => x.startsWith('image/'));
+      if (t){ traceImage(await it.getType(t)); return; }
+    }
+    hint('클립보드에 이미지가 없어. 이미지를 복사한 다음 눌러줘.', true);
+  } catch(err){
+    hint('이 브라우저는 버튼 붙여넣기를 막아. Ctrl+V(폰은 화면 길게 눌러 붙여넣기)로 해줘.', true);
+  }
+});
+async function traceImage(f){
   hint('선 따는 중…');
   try {
     const url = URL.createObjectURL(f);
@@ -855,7 +898,7 @@ $('photoIn').addEventListener('change', async e => {
     afterEdit();
     setTimeout(() => hint(), 4000);
   } catch(err){ hint('이미지를 못 읽었어. 다른 사진으로 해봐.', true); }
-});
+}
 
 function afterEdit(){ $('undoBtn').disabled = !undoStack.length; $('wipeBtn').disabled = !strokes.length; drawPad(); refreshStats(); saveMine(); }
 
