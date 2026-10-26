@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta property="og:title" content="낙서 바퀴 — 도전장이 도착했다">
+<meta property="og:description" content="바퀴를 그려서 개장애물 코스를 넘어라. 친구 기록을 깰 수 있을까?">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#fbfaf4">
+<style>*,*::before,*::after{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}[hidden]{display:none!important}</style>
+<title>낙서 바퀴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: full-screen notebook page. Course scrolls on the canvas; the wheel pad is a sticky note pinned at the bottom. Single deliberate paper look. */
+:root{
+  --paper:#fbfaf4; --rule:#cfdcec; --margin:#eaa6a0;
+  --ink:#1e2232; --ink2:#5d6275; --red:#d4402b; --good:#2f7d55; --kakao:#fee500; --kakao-ink:#1a1700;
+  --display:'Gaegu','Nanum Pen Script','Comic Sans MS',cursive;
+  --body:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  --hand:255px 18px 225px 16px / 16px 225px 18px 255px;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+#hud{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 8px);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#time{font-family:var(--display);font-weight:700;font-size:clamp(40px,10vw,58px);line-height:1;font-variant-numeric:tabular-nums}
+#vs{font-size:13px;color:var(--ink2);min-height:18px}
+#split{font-family:var(--display);font-weight:700;font-size:26px;min-height:30px;opacity:0;transition:opacity .2s}
+#split.on{opacity:1}
+#split.bad{color:var(--red)} #split.ok{color:var(--good)}
+#reset{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:max(12px,env(safe-area-inset-right,0px));font-family:var(--display);font-weight:700;font-size:17px;padding:4px 10px;border:2px solid var(--ink);border-radius:var(--hand);background:var(--paper);color:var(--ink);box-shadow:2px 2px 0 var(--ink);cursor:pointer}
+
+#padWrap{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;flex-direction:column;align-items:center;gap:6px}
+#padHint{font-family:var(--display);font-weight:700;font-size:20px;color:var(--ink2)}
+#padHint.call{color:var(--red);animation:nud 1s ease-in-out infinite}
+@keyframes nud{50%{transform:translateY(-3px)}}
+#pad{display:block;background:var(--paper);border:2.5px solid var(--ink);border-radius:var(--hand);box-shadow:4px 5px 0 var(--ink);touch-action:none;cursor:crosshair}
+
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:color-mix(in srgb,var(--paper) 60%,transparent);overflow-y:auto;z-index:5}
+.card{width:min(390px,100%);max-height:100%;overflow-y:auto;background:var(--paper);border:2.5px solid var(--ink);border-radius:var(--hand);box-shadow:5px 6px 0 var(--ink);padding:22px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--ink2)}
+h1,h2{font-family:var(--display);font-weight:700;margin:0;line-height:1.05;text-wrap:balance}
+h1{font-size:56px} h1 em{font-style:normal;color:var(--red)}
+h2{font-size:42px} h2.win{color:var(--red)}
+p{margin:0;line-height:1.55}
+.muted{color:var(--ink2);font-size:14px}
+.rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14.5px;line-height:1.45}
+.rules li{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+.rules b{font-family:var(--display);font-size:20px;font-weight:700}
+.rules b.r{color:var(--red)}
+.big{font-family:var(--display);font-weight:700;font-size:34px;font-variant-numeric:tabular-nums;line-height:1}
+.tip{font-family:var(--display);font-size:21px;line-height:1.3;border-left:3px solid var(--red);padding-left:10px}
+.tblWrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th{font-weight:400;color:var(--ink2);font-size:12px;text-align:right;padding:2px 4px;border-bottom:1.5px solid var(--ink)}
+th:first-child,td:first-child{text-align:left}
+td{padding:5px 4px;text-align:right;border-bottom:1px dashed var(--rule)}
+td.bad{color:var(--red);font-weight:700} td.ok{color:var(--good);font-weight:700}
+tr.worst td{background:color-mix(in srgb,var(--red) 9%,transparent)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{flex:1 1 140px;font-family:var(--display);font-weight:700;font-size:23px;padding:10px 14px;border:2.5px solid var(--ink);border-radius:var(--hand);background:var(--paper);color:var(--ink);box-shadow:3px 3px 0 var(--ink);cursor:pointer;transition:transform .06s,box-shadow .06s}
+.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.btn:focus-visible,input:focus-visible,#reset:focus-visible{outline:3px dashed var(--red);outline-offset:3px}
+.btn.main{background:var(--ink);color:var(--paper)}
+.btn.kakao{background:var(--kakao);color:var(--kakao-ink)}
+.namebox{display:flex;align-items:center;gap:10px;font-size:14px}
+.namebox input{flex:1;min-width:0;font-family:var(--display);font-size:22px;font-weight:700;border:none;border-bottom:2px solid var(--ink);background:transparent;color:var(--ink);padding:2px 4px;-webkit-user-select:text;user-select:text}
+#copyOut{width:100%;min-height:90px;font:13px/1.4 var(--body);border:2px dashed var(--ink2);border-radius:8px;padding:8px;background:var(--paper);color:var(--ink);resize:none;-webkit-user-select:text;user-select:text}
+.toast{font-size:14px;color:var(--red);min-height:20px}
+.seal{display:inline-block;font-family:var(--display);font-weight:700;color:var(--red);border:2.5px solid var(--red);border-radius:6px;padding:0 8px;transform:rotate(-4deg);font-size:20px}
+.chalRow{display:flex;gap:14px;align-items:center}
+#chalCv{flex:none;width:96px;height:96px;border:2px dashed var(--ink2);border-radius:10px;background:var(--paper)}
+.vs{font-family:var(--display);font-size:23px;line-height:1.3}
+.vs strong{font-size:38px;color:var(--red);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}#padHint.call{animation:none}}
+</style>
+
+</head>
+<body>
+<canvas id="cv" aria-label="코스 화면"></canvas>
+
+<div id="hud" hidden>
+  <div id="time">0.00</div>
+  <div id="vs"></div>
+  <div id="split"></div>
+</div>
+<button id="reset" hidden>체크포인트로</button>
+
+<div id="padWrap" hidden>
+  <div id="padHint">여기에 바퀴를 그려</div>
+  <canvas id="pad" aria-label="바퀴 그리는 칸"></canvas>
+</div>
+
+<section class="screen" id="menu">
+  <div class="card">
+    <div class="eyebrow">개장애물 1코스</div>
+    <h1>낙서<br><em>바퀴</em></h1>
+    <ul class="rules">
+      <li><b>그리기</b><span>아래 칸에 아무 모양이나 그리면 그게 바퀴가 된다</span></li>
+      <li><b class="r">다시</b><span>달리는 중에도 다시 그리면 바로 바뀐다</span></li>
+      <li><b>요령</b><span>계단, 벽, 터널, 점프대. 구간마다 맞는 바퀴가 다르다</span></li>
+      <li><b>추락</b><span>떨어지면 마지막 깃발에서 다시. 시간은 계속 간다</span></li>
+    </ul>
+    <p class="muted" id="bestLine">완주 기록을 카톡으로 보내면 친구는 내 고스트랑 같이 달린다.</p>
+    <div class="row"><button class="btn main" id="startBtn">출발</button></div>
+  </div>
+</section>
+
+<section class="screen" id="chal" hidden>
+  <div class="card">
+    <span><span class="seal">도전장</span></span>
+    <div class="chalRow">
+      <canvas id="chalCv" aria-label="상대가 마지막에 쓴 바퀴"></canvas>
+      <p class="vs"><span id="chalName"></span>님이 이 바퀴로<br><strong id="chalTime">0</strong>초</p>
+    </div>
+    <p class="muted">같은 코스에서 상대 고스트랑 같이 달린다. 깃발마다 몇 초 차이인지 바로 나온다.</p>
+    <div class="row"><button class="btn main" id="acceptBtn">받아들이기</button></div>
+    <button class="btn" id="soloBtn" style="font-size:19px">그냥 혼자 달리기</button>
+  </div>
+</section>
+
+<section class="screen" id="result" hidden>
+  <div class="card">
+    <div class="eyebrow" id="resEyebrow">완주</div>
+    <h2 id="verdict">0.00초</h2>
+    <p class="tip" id="tip" hidden></p>
+    <div class="tblWrap"><table id="segTbl"></table></div>
+    <p class="muted" id="resSub"></p>
+    <label class="namebox" for="nm">이름 <input id="nm" maxlength="8" placeholder="도전장에 쓸 이름" autocomplete="off"></label>
+    <div class="row"><button class="btn kakao" id="shareBtn">카톡으로 도전장 보내기</button></div>
+    <div class="toast" id="toast" aria-live="polite"></div>
+    <textarea id="copyOut" hidden readonly aria-label="복사할 도전장 문구"></textarea>
+    <div class="row">
+      <button class="btn main" id="againBtn">바로 다시</button>
+      <button class="btn" id="homeBtn">처음으로</button>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/planck@1.0.0/dist/planck.min.js"></script>
+<script>
+(() => {
+const BASE_URL = '';
+const pl = planck;
+const $ = id => document.getElementById(id);
+const C = { paper:'#fbfaf4', rule:'#cfdcec', margin:'#eaa6a0', ink:'#1e2232', ink2:'#5d6275', red:'#d4402b', good:'#2f7d55' };
+const FONT = "Gaegu, 'Nanum Pen Script', cursive";
+const STEP = 1/60, PPM = 30, KEEP_K = 45, KEEP_D = 9, MOTOR = 9, TORQUE = 260, GRAV = 22, SPIN = 9/60, WSCALE = 130, TH = 9, AXLE = 42, KILL_Y = 460, START_X = 60;
+
+/* ---------- course ---------- */
+const STRIPS = [
+  [[-400,400],[-400,0],[500,0],[560,-20],[620,0],[680,-25],[740,0],[900,0],[900,-35],[990,-35],[990,-70],[1080,-70],[1080,-105],[1170,-105],[1170,-140],[1300,-140],[1300,400]],
+  [[1420,400],[1420,-140],[1600,-140],[1800,-40],[1900,-40],[1900,-150],[2150,-150],[2150,-60],[2800,-60],[2830,-90],[2860,-60],[2890,-95],[2920,-60],[2950,-90],[2980,-60],[3010,-100],[3040,-60],[3200,-60],[3450,-160],[3450,400]],
+  [[3650,400],[3650,-80],[3900,-80],[3900,-20],[4000,-20],[4000,40],[4100,40],[4300,-120],[4800,-120],[4800,-700]]
+];
+const CEIL = { x1:2420, x2:2680, y:-116 };
+const CPS = [
+  { x:1250, name:'계단' }, { x:2050, name:'낭떠러지·벽' }, { x:2350, name:'내리막' },
+  { x:3150, name:'터널·가시밭' }, { x:3800, name:'점프대' }, { x:4450, name:'급경사' }
+];
+const LABELS = [[880,-60,'계단'],[1330,-200,'낭떠러지!'],[1880,-190,'벽'],[2430,-170,'터널 (낮음)'],[2850,-130,'가시밭'],[3300,-170,'점프대'],[4120,-30,'급경사']];
+const FINISH = CPS[CPS.length-1].x;
+
+function groundY(x){
+  let best = null;
+  for (const s of STRIPS) for (let i = 0; i < s.length-1; i++){
+    const a = s[i], b = s[i+1];
+    if (b[0] - a[0] <= 0) continue;
+    if (x >= a[0] && x <= b[0]){
+      const y = a[1] + (b[1]-a[1]) * (x-a[0]) / (b[0]-a[0]);
+      if (best === null || y < best) best = y;
+    }
+  }
+  return best;
+}
+
+/* ---------- utils ---------- */
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : v; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+};
+const dist = (a, b) => Math.hypot(a.x-b.x, a.y-b.y);
+const fmt = t => t.toFixed(2);
+function hashStr(s){ let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+function resample(pts, maxN, minStep){
+  let L = 0; for (let i = 1; i < pts.length; i++) L += dist(pts[i-1], pts[i]);
+  if (L < 1e-6) return pts.slice(0, 1);
+  const step = Math.max(minStep, L / maxN);
+  const out = [pts[0]]; let acc = 0, prev = pts[0];
+  for (let i = 1; i < pts.length; i++){
+    const cur = pts[i]; let d = dist(prev, cur);
+    while (acc + d >= step && d > 0){
+      const t = (step - acc) / d;
+      const np = { x: prev.x + (cur.x-prev.x)*t, y: prev.y + (cur.y-prev.y)*t };
+      out.push(np); prev = np; d = dist(prev, cur); acc = 0;
+    }
+    acc += d; prev = cur;
+  }
+  const last = pts[pts.length-1];
+  if (dist(out[out.length-1], last) > minStep * 0.3) out.push(last);
+  return out;
+}
+function strokeLen(pts){ let L = 0; for (let i = 1; i < pts.length; i++) L += dist(pts[i-1], pts[i]); return L; }
+
+/* local wheel points centred on approximate centre of mass */
+function localFromShape(sh){
+  let pts = sh.map(p => ({ x:(p.x-0.5)*WSCALE, y:(p.y-0.5)*WSCALE }));
+  pts = resample(pts, 34, 8);
+  let mx = 0, my = 0, ml = 0;
+  for (let i = 1; i < pts.length; i++){ const l = dist(pts[i-1], pts[i]); mx += (pts[i-1].x+pts[i].x)/2*l; my += (pts[i-1].y+pts[i].y)/2*l; ml += l; }
+  if (ml > 0){ mx /= ml; my /= ml; } else { mx = pts[0].x; my = pts[0].y; }
+  return pts.map(p => ({ x:p.x-mx, y:p.y-my }));
+}
+const radiusOf = loc => Math.max(10, ...loc.map(p => Math.hypot(p.x, p.y))) + TH/2;
+
+/* ---------- token for challenge links ---------- */
+function b64e(str){ const b = new TextEncoder().encode(str); let s = ''; b.forEach(x => s += String.fromCharCode(x)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64d(t){ t = t.replace(/-/g,'+').replace(/_/g,'/'); while (t.length % 4) t += '='; const s = atob(t); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return new TextDecoder().decode(b); }
+function sig(o){ return (hashStr(JSON.stringify([o.n, o.t, o.s, o.w, 'wheel1'])) % 46656).toString(36); }
+function quant(sh){ const r = resample(sh, 24, 0.01); const w = []; r.forEach(p => w.push(Math.round(p.x*99), Math.round(p.y*99))); return w; }
+function dequant(w){ const out = []; for (let i = 0; i+1 < w.length; i += 2) out.push({ x:w[i]/99, y:w[i+1]/99 }); return out; }
+function makeTok(o){ return 'wr' + b64e(JSON.stringify({ n:o.n, t:o.t, s:o.s, w:o.w, k:sig(o) })); }
+function readTok(h){
+  try {
+    if (!h || !h.startsWith('wr')) return null;
+    const o = JSON.parse(b64d(h.slice(2)));
+    if (typeof o.n !== 'string' || typeof o.t !== 'number' || !Array.isArray(o.s) || !Array.isArray(o.w)) return null;
+    if (o.s.length !== CPS.length || o.k !== sig(o)) return null;
+    o.n = o.n.slice(0, 10) || '익명';
+    return o;
+  } catch(e){ return null; }
+}
+
+/* ---------- canvas sizing ---------- */
+const cv = $('cv'), ctx = cv.getContext('2d');
+const pad = $('pad'), pctx = pad.getContext('2d');
+let DPR = 1, W = 0, H = 0, S = 1, PS = 200;
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  S = Math.max(0.55, Math.min(1.5, W/560, H/640));
+  PS = Math.round(Math.max(130, Math.min(200, W - 48, H * 0.27)));
+  pad.style.width = pad.style.height = PS + 'px';
+  pad.width = pad.height = Math.round(PS*DPR);
+}
+addEventListener('resize', resize); resize();
+
+/* ---------- physics world (planck.js / Box2D, metres = px / PPM, y down) ---------- */
+const V = (x, y) => pl.Vec2(x / PPM, y / PPM);
+let world, chassis, wheels = [], wheelR = 20;
+let shape = null, local = null;
+const car = { x:START_X, y:0, a:0 };
+
+function buildWorld(){
+  world = new pl.World({ gravity: pl.Vec2(0, GRAV) });
+  const g = world.createBody();
+  for (const s of STRIPS) for (let i = 0; i < s.length-1; i++){
+    const a = s[i], b = s[i+1];
+    const e = pl.Edge(V(a[0], a[1]), V(b[0], b[1]));
+    if (i > 0) e.setPrevVertex(V(s[i-1][0], s[i-1][1]));
+    if (i < s.length-2) e.setNextVertex(V(s[i+2][0], s[i+2][1]));
+    const steep = Math.abs(b[1]-a[1]) > Math.abs(b[0]-a[0]) * 2;
+    g.createFixture(e, { friction: steep ? 0.12 : 0.9 });   // walls are slick: wheels must vault, not crawl
+  }
+  g.createFixture(pl.Box((CEIL.x2-CEIL.x1)/2/PPM, 150/PPM, V((CEIL.x1+CEIL.x2)/2, CEIL.y-150), 0), { friction: 0.3 });
+  chassis = world.createDynamicBody({ position: V(START_X, (groundY(START_X) || 0) - 30), allowSleep: false });
+  chassis.createFixture(pl.Box(50/PPM, 8/PPM), { density: 3, friction: 0.5, filterGroupIndex: -1 });
+  wheels = [];
+  snap();
+}
+
+/* self-righting gyro keeps the doodle car from flipping on its own motor torque */
+function steady(){
+  const I = chassis.getInertia(), a = chassis.getAngle(), w = chassis.getAngularVelocity();
+  chassis.applyTorque(-(a * KEEP_K + w * KEEP_D) * I, true);
+}
+function snap(){ const p = chassis.getPosition(); car.x = p.x * PPM; car.y = p.y * PPM; car.a = chassis.getAngle(); }
+
+function wheelBody(loc, ax, ay){
+  const body = world.createDynamicBody({ position: V(ax, ay), allowSleep: false });
+  let n = 0;
+  for (let i = 1; i < loc.length; i++){
+    const a = loc[i-1], b = loc[i], len = dist(a, b);
+    if (len < 0.5) continue;
+    body.createFixture(pl.Box((len + TH*0.7)/2/PPM, TH/2/PPM, V((a.x+b.x)/2, (a.y+b.y)/2), Math.atan2(b.y-a.y, b.x-a.x)), { density: 0.35, friction: 1.2, filterGroupIndex: -1 });
+    n++;
+  }
+  if (n === 0) body.createFixture(pl.Circle(14/PPM), { density: 0.35, friction: 1.2, filterGroupIndex: -1 });
+  body.drawPts = n ? loc : null;
+  return body;
+}
+
+function attachWheels(lift){
+  for (const w of wheels) world.destroyBody(w);
+  wheels = [];
+  if (!local) return;
+  const newR = radiusOf(local);
+  if (lift){
+    const p = chassis.getPosition(), up = Math.max(0, newR - wheelR) + 4;
+    chassis.setTransform(pl.Vec2(p.x, p.y - up/PPM), chassis.getAngle());
+    const v = chassis.getLinearVelocity();
+    chassis.setLinearVelocity(pl.Vec2(v.x, Math.min(0, v.y)));
+  }
+  wheelR = newR;
+  const p = chassis.getPosition(), ang = chassis.getAngle();
+  for (let i = 0; i < 2; i++){
+    const o = i ? AXLE : -AXLE;
+    const ax = p.x*PPM + o*Math.cos(ang), ay = p.y*PPM + o*Math.sin(ang);
+    const w = wheelBody(local, ax, ay);
+    w.setLinearVelocity(chassis.getLinearVelocity());
+    world.createJoint(pl.RevoluteJoint({ enableMotor: true, motorSpeed: MOTOR, maxMotorTorque: TORQUE }, chassis, w, V(ax, ay)));
+    wheels.push(w);
+  }
+}
+
+function placeCar(x, y){
+  chassis.setTransform(V(x, y), 0);
+  chassis.setLinearVelocity(pl.Vec2(0, 0));
+  chassis.setAngularVelocity(0);
+  attachWheels(false);
+  snap();
+}
+
+/* ---------- run state ---------- */
+let state = 'menu';   // menu | ready | run | done
+let R = null;         // current run
+let ghost = null;     // { name, t, s, loc }
+let camX = 0, camY = 0;
+
+function newRun(){
+  buildWorld();
+  wheelR = 20;
+  R = { t:0, cp:0, splits:[], resX:START_X, falls:0, redraws:0, msgT:0, msg:'' };
+  camX = START_X; camY = -60;
+  if (local){ attachWheels(true); state = 'run'; } else state = 'ready';
+  showPlayUI();
+}
+
+function respawn(why){
+  if (!R || state !== 'run') return;
+  const x = R.resX, gy = groundY(x) ?? 0;
+  placeCar(x, gy - wheelR - 14);
+  R.falls++;
+  flashSplit(why, 'bad');
+}
+
+function physicsStep(){
+  steady();
+  world.step(STEP, 10, 4);
+  snap();
+  if (state !== 'run') return;
+  R.t += STEP;
+  const cx = car.x;
+  while (R.cp < CPS.length && cx >= CPS[R.cp].x){
+    R.splits.push(R.t);
+    R.resX = CPS[R.cp].x;
+    if (ghost){
+      const d = R.t - ghost.s[R.cp];
+      flashSplit(CPS[R.cp].name + '  ' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)), d > 0 ? 'bad' : 'ok');
+    } else flashSplit(CPS[R.cp].name + ' 통과', 'ok');
+    R.cp++;
+    if (R.cp === CPS.length){ finish(); return; }
+  }
+  if (car.y > KILL_Y) respawn('추락! 깃발에서 다시');
+}
+
+let splitTimer = 0;
+function flashSplit(text, cls){
+  const el = $('split');
+  el.textContent = text; el.className = 'on ' + cls;
+  clearTimeout(splitTimer); splitTimer = setTimeout(() => el.className = '', 1600);
+}
+
+/* ---------- pad drawing ---------- */
+let drawing = null;
+function padPt(e){ const r = pad.getBoundingClientRect(); return { x:Math.min(1, Math.max(0, (e.clientX-r.left)/r.width)), y:Math.min(1, Math.max(0, (e.clientY-r.top)/r.height)) }; }
+pad.addEventListener('pointerdown', e => {
+  if (state !== 'ready' && state !== 'run') return;
+  e.preventDefault();
+  try { pad.setPointerCapture(e.pointerId); } catch(err){}
+  drawing = [padPt(e)];
+});
+pad.addEventListener('pointermove', e => {
+  if (!drawing) return;
+  const p = padPt(e);
+  if (dist(p, drawing[drawing.length-1]) > 0.008) drawing.push(p);
+});
+function endStroke(){
+  if (!drawing) return;
+  const st = drawing; drawing = null;
+  if (strokeLen(st) < 0.12) return;
+  shape = st; local = localFromShape(shape);
+  if (state === 'ready'){ attachWheels(true); state = 'run'; }
+  else if (state === 'run'){ attachWheels(true); R.redraws++; }
+  updatePadHint();
+}
+pad.addEventListener('pointerup', endStroke);
+pad.addEventListener('pointercancel', endStroke);
+
+function updatePadHint(){
+  const h = $('padHint');
+  if (state === 'ready'){ h.textContent = '여기에 바퀴를 그려'; h.classList.add('call'); }
+  else { h.textContent = '언제든 다시 그리기'; h.classList.remove('call'); }
+}
+
+function drawPad(){
+  pctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  pctx.fillStyle = C.paper; pctx.fillRect(0, 0, PS, PS);
+  pctx.fillStyle = C.rule;
+  for (let x = 1; x < 8; x++) for (let y = 1; y < 8; y++){ pctx.beginPath(); pctx.arc(x*PS/8, y*PS/8, 1.4, 0, 7); pctx.fill(); }
+  const lw = TH * PS / WSCALE;
+  pctx.lineCap = 'round'; pctx.lineJoin = 'round';
+  const line = (pts, col, a) => { if (!pts || pts.length < 2) return; pctx.globalAlpha = a; pctx.strokeStyle = col; pctx.lineWidth = lw; pctx.beginPath(); pts.forEach((p, i) => i ? pctx.lineTo(p.x*PS, p.y*PS) : pctx.moveTo(p.x*PS, p.y*PS)); pctx.stroke(); pctx.globalAlpha = 1; };
+  line(shape, C.ink2, drawing ? 0.18 : 0.55);
+  line(drawing, C.ink, 1);
+}
+
+/* ---------- rendering ---------- */
+function jt(i){ const h = Math.sin(i*12.9898) * 43758.5453; return (h - Math.floor(h) - 0.5) * 2; }
+
+function drawWheelShape(pts, x, y, ang, alpha){
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = C.ink; ctx.lineWidth = TH; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (!pts){ ctx.beginPath(); ctx.arc(x, y, 14, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; return; }
+  const c = Math.cos(ang), s = Math.sin(ang);
+  ctx.beginPath();
+  pts.forEach((p, i) => { const px = x + p.x*c - p.y*s, py = y + p.x*s + p.y*c; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+  ctx.stroke();
+  ctx.fillStyle = C.paper; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawCarBody(x, y, ang, alpha, scarf){
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.globalAlpha = alpha;
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.fillStyle = C.paper;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-50, -8, 100, 16, 6) : ctx.rect(-50, -8, 100, 16); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-30, -2); ctx.lineTo(30, -2); ctx.stroke();
+  // driver
+  ctx.beginPath(); ctx.arc(-4, -34, 8, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-4, -26); ctx.lineTo(-6, -8); ctx.moveTo(-5, -20); ctx.lineTo(14, -14); ctx.stroke();
+  if (scarf){ ctx.strokeStyle = C.red; ctx.lineWidth = 3; const f = Math.sin(performance.now()/90)*3; ctx.beginPath(); ctx.moveTo(-12, -37); ctx.lineTo(4, -37); ctx.moveTo(-12, -37); ctx.lineTo(-26, -33 + f); ctx.stroke(); }
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+
+function ghostX(t){
+  const pts = [[0, START_X], ...CPS.map((c, i) => [ghost.s[i], c.x])];
+  if (t >= pts[pts.length-1][0]) return FINISH + (t - pts[pts.length-1][0]) * 60;
+  for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]){ const [t0, x0] = pts[i-1], [t1, x1] = pts[i]; return x0 + (x1-x0) * (t-t0) / Math.max(1e-3, t1-t0); }
+  return START_X;
+}
+
+let lastGhostY = 0;
+function render(dt){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = C.paper; ctx.fillRect(0, 0, W, H);
+  if (chassis){
+    camX += (car.x + 90 - camX) * Math.min(1, dt*5);
+    camY += (car.y - camY) * Math.min(1, dt*4);
+  }
+  const tx = W*0.36 - camX*S, ty = H*0.36 - camY*S;
+  // ruled paper drifting with the camera
+  const gap = 30 * S;
+  ctx.strokeStyle = C.rule; ctx.lineWidth = 1;
+  for (let y = ((ty % gap) + gap) % gap; y < H; y += gap){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.strokeStyle = C.margin; ctx.lineWidth = 1.5;
+  const mx = ((tx + 20*S) % (900*S) + 900*S) % (900*S);
+  ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx, H); ctx.stroke();
+
+  ctx.setTransform(DPR*S, 0, 0, DPR*S, DPR*tx, DPR*ty);
+  // ground
+  for (const s of STRIPS){
+    ctx.beginPath(); s.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+    ctx.fillStyle = 'rgba(30,34,50,0.06)'; ctx.fill();
+    ctx.save(); ctx.clip();
+    ctx.strokeStyle = 'rgba(30,34,50,0.13)'; ctx.lineWidth = 1.5;
+    const x0 = s[0][0], x1 = s[s.length-1][0];
+    for (let x = x0 - 800; x < x1; x += 16){ ctx.beginPath(); ctx.moveTo(x, -300); ctx.lineTo(x + 700, 400); ctx.stroke(); }
+    ctx.restore();
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 3.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); s.forEach((p, i) => { const jx = jt(p[0]*.7+p[1])*1.2, jy = jt(p[1]*.3+p[0])*1.2; i ? ctx.lineTo(p[0]+jx, p[1]+jy) : ctx.moveTo(p[0]+jx, p[1]+jy); }); ctx.stroke();
+  }
+  // ceiling
+  ctx.fillStyle = 'rgba(30,34,50,0.10)'; ctx.fillRect(CEIL.x1, CEIL.y-420, CEIL.x2-CEIL.x1, 420);
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 3.2;
+  ctx.beginPath(); ctx.moveTo(CEIL.x1, CEIL.y-420); ctx.lineTo(CEIL.x1, CEIL.y); ctx.lineTo(CEIL.x2, CEIL.y); ctx.lineTo(CEIL.x2, CEIL.y-420); ctx.stroke();
+  // labels
+  ctx.font = '700 22px ' + FONT; ctx.textAlign = 'left'; ctx.fillStyle = C.ink2;
+  for (const [x, y, t] of LABELS) ctx.fillText(t, x, y);
+  // checkpoint flags
+  CPS.forEach((c, i) => {
+    const gy = groundY(c.x) ?? 0, last = i === CPS.length-1, passed = R && R.cp > i;
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(c.x, gy); ctx.lineTo(c.x, gy - (last ? 120 : 80)); ctx.stroke();
+    if (last){
+      for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++){ ctx.fillStyle = (r+k) % 2 ? C.paper : C.ink; ctx.fillRect(c.x + k*11, gy - 120 + r*11, 11, 11); }
+      ctx.strokeRect(c.x, gy - 120, 44, 33);
+      ctx.fillStyle = C.red; ctx.font = '700 24px ' + FONT; ctx.fillText('도착', c.x + 50, gy - 96);
+    } else {
+      ctx.fillStyle = passed ? C.red : C.paper;
+      ctx.beginPath(); ctx.moveTo(c.x, gy-80); ctx.lineTo(c.x+30, gy-70); ctx.lineTo(c.x, gy-60); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = C.ink2; ctx.font = '700 16px ' + FONT; ctx.fillText(String(i+1), c.x - 12, gy - 64);
+    }
+  });
+  // ghost
+  if (ghost && R && state !== 'menu'){
+    const gx = ghostX(R.t);
+    const gyRaw = groundY(gx);
+    if (gyRaw !== null) lastGhostY = gyRaw;
+    const gr = radiusOf(ghost.loc);
+    const by = lastGhostY - gr;
+    const ang = R.t * SPIN * 60;
+    drawWheelShape(ghost.drawPts, gx - AXLE, by, ang, 0.28);
+    drawWheelShape(ghost.drawPts, gx + AXLE, by, ang, 0.28);
+    drawCarBody(gx, by, 0, 0.3, false);
+    ctx.globalAlpha = 0.75; ctx.fillStyle = C.ink2; ctx.font = '700 18px ' + FONT; ctx.textAlign = 'center';
+    ctx.fillText(ghost.name, gx, by - 54); ctx.globalAlpha = 1; ctx.textAlign = 'left';
+  }
+  // player car
+  if (chassis){
+    for (const w of wheels){ const p = w.getPosition(); drawWheelShape(w.drawPts, p.x*PPM, p.y*PPM, w.getAngle(), 1); }
+    drawCarBody(car.x, car.y, car.a, 1, true);
+  }
+}
+
+/* ---------- loop ---------- */
+let last = performance.now(), acc = 0;
+function frame(now){
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if ((state === 'ready' || state === 'run') && world){
+    acc += dt; let n = 0;
+    while (acc >= STEP && n < 4){ physicsStep(); acc -= STEP; n++; }
+    if (n === 4) acc = 0;
+    $('time').textContent = fmt(R.t);
+  } else if (state === 'done' && world){
+    world.step(dt, 8, 3); snap();
+  }
+  render(dt);
+  if (state === 'ready' || state === 'run') drawPad();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- screens ---------- */
+const SCREENS = ['menu', 'chal', 'result'];
+function showScreen(id){ SCREENS.forEach(s => $(s).hidden = s !== id); }
+function showPlayUI(){
+  showScreen(null);
+  $('hud').hidden = false; $('padWrap').hidden = false; $('reset').hidden = false;
+  $('vs').textContent = ghost ? 'vs ' + ghost.name + ' ' + fmt(ghost.t) + '초' : '';
+  $('split').className = '';
+  updatePadHint();
+}
+function hidePlayUI(){ $('hud').hidden = true; $('padWrap').hidden = true; $('reset').hidden = true; }
+
+function loadBest(){ try { const b = JSON.parse(store.get('wr_best', 'null')); return b && Array.isArray(b.s) && b.s.length === CPS.length ? b : null; } catch(e){ return null; } }
+function ghostFrom(name, t, s, w){
+  const sh = dequant(w), loc = localFromShape(sh);
+  return { name, t, s, loc, drawPts: loc };
+}
+
+let opp = null;
+function refreshMenu(){
+  const b = loadBest();
+  $('bestLine').textContent = b
+    ? '내 최고 ' + fmt(b.t) + '초. 다시 달리면 내 최고 기록이 고스트로 같이 달린다.'
+    : '완주 기록을 카톡으로 보내면 친구는 내 고스트랑 같이 달린다.';
+}
+function startSolo(){
+  opp = null;
+  const b = loadBest();
+  ghost = b ? ghostFrom('내 최고', b.t, b.s, b.w) : null;
+  newRun();
+}
+function startVs(){ ghost = ghostFrom(opp.n, opp.t, opp.s, opp.w); newRun(); }
+
+function finish(){
+  state = 'done';
+  const t = R.t, splits = R.splits.slice();
+  const prev = loadBest();
+  const isBest = !prev || t < prev.t;
+  if (isBest) store.set('wr_best', JSON.stringify({ t, s:splits, w:quant(shape) }));
+  R.final = { t, splits, isBest, prev };
+  flashSplit('도착!', 'ok');
+  setTimeout(showResult, 900);
+}
+
+function segs(arr){ return arr.map((v, i) => v - (i ? arr[i-1] : 0)); }
+
+function showResult(){
+  hidePlayUI();
+  const { t, splits, isBest, prev } = R.final;
+  const v = $('verdict'), tip = $('tip'), sub = $('resSub');
+  v.classList.remove('win'); tip.hidden = true;
+  const mine = segs(splits);
+  let rows = '', theirs = null;
+  if (ghost) theirs = segs(ghost.s);
+  let worst = -1, worstD = 0, best = -1, bestD = 0;
+  CPS.forEach((c, i) => {
+    let dCell = '', cls = '';
+    if (theirs){
+      const d = mine[i] - theirs[i];
+      if (d > worstD){ worstD = d; worst = i; }
+      if (d < bestD){ bestD = d; best = i; }
+      cls = d > 0.005 ? 'bad' : 'ok';
+      dCell = '<td class="' + cls + '">' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)) + '</td>';
+    }
+    rows += '<tr data-i="' + i + '"><td>' + (i+1) + '. ' + c.name + '</td><td>' + fmt(mine[i]) + '</td>' + (theirs ? '<td>' + fmt(theirs[i]) + '</td>' + dCell : '') + '</tr>';
+  });
+  const head = '<tr><th>구간</th><th>나</th>' + (theirs ? '<th>' + ghost.name + '</th><th>차이</th>' : '') + '</tr>';
+  $('segTbl').innerHTML = head + rows;
+  if (worst >= 0) $('segTbl').querySelector('tr[data-i="' + worst + '"]').classList.add('worst');
+
+  if (opp){
+    const diff = t - opp.t;
+    $('resEyebrow').textContent = opp.n + '님과의 대결 · 개장애물 1코스';
+    if (diff < 0){
+      v.textContent = '이겼다 ' + fmt(t) + '초'; v.classList.add('win');
+      sub.textContent = opp.n + '님보다 ' + fmt(-diff) + '초 빨랐다.' + (best >= 0 ? ' ' + CPS[best].name + '에서 ' + fmt(-bestD) + '초 벌었다.' : '');
+      $('shareBtn').textContent = '카톡으로 이겼다고 알리기';
+    } else {
+      v.textContent = '졌다 ' + fmt(t) + '초';
+      sub.textContent = fmt(diff) + '초 차이. 같은 코스니까 바퀴만 바꾸면 된다.';
+      $('shareBtn').textContent = '카톡으로 도전장 보내기';
+    }
+    if (worst >= 0 && diff > 0){
+      tip.hidden = false;
+      tip.textContent = CPS[worst].name + '에서 ' + fmt(worstD) + '초 잃었다. ' + (worstD >= diff ? '거기만 잡으면 이긴다.' : '제일 크게 밀린 구간이다.');
+    }
+  } else {
+    $('resEyebrow').textContent = '개장애물 1코스 · 완주';
+    v.textContent = fmt(t) + '초';
+    if (isBest){
+      v.classList.add('win');
+      sub.textContent = prev ? '최고 기록 경신. 이전보다 ' + fmt(prev.t - t) + '초 빨랐다.' : '첫 완주. 이 기록을 친구한테 던질 차례.';
+    } else {
+      sub.textContent = '내 최고 ' + fmt(prev.t) + '초. ' + fmt(t - prev.t) + '초 차이.';
+      if (worst >= 0){ tip.hidden = false; tip.textContent = CPS[worst].name + '에서 ' + fmt(worstD) + '초 잃었다. ' + (worstD >= t - prev.t ? '거기만 잡으면 기록 경신.' : '제일 크게 밀린 구간이다.'); }
+    }
+    $('shareBtn').textContent = '카톡으로 도전장 보내기';
+  }
+  $('toast').textContent = ''; $('copyOut').hidden = true;
+  $('nm').value = store.get('wr_name', '');
+  showScreen('result');
+}
+
+function baseLink(){
+  if (BASE_URL) return BASE_URL;
+  try { return location.href.split('#')[0]; } catch(e){ return ''; }
+}
+function shareText(){
+  const name = ($('nm').value.trim() || '익명').slice(0, 8);
+  store.set('wr_name', name === '익명' ? '' : name);
+  const { t, splits } = R.final;
+  const tok = makeTok({ n:name, t:Math.round(t*100)/100, s:splits.map(x => Math.round(x*100)/100), w:quant(shape) });
+  const link = baseLink() + '#' + tok;
+  if (opp && t < opp.t)
+    return '🛞 낙서 바퀴\n' + opp.n + ' ' + fmt(opp.t) + '초 → ' + name + ' ' + fmt(t) + '초. 깼다.\n내 바퀴 보고 따라와봐\n' + link;
+  return '🛞 낙서 바퀴 도전장\n' + name + ' ' + fmt(t) + '초 완주\n바퀴 하나 잘 그리면 이김. 넘어봐\n' + link;
+}
+
+$('shareBtn').addEventListener('click', () => {
+  const text = shareText();
+  const fallback = () => {
+    const ta = $('copyOut'); ta.hidden = false; ta.value = text; ta.focus(); ta.select();
+    $('toast').textContent = '자동 복사가 막혔다. 아래 글을 길게 눌러 복사해서 카톡에 붙여넣기.';
+  };
+  try {
+    navigator.clipboard.writeText(text).then(() => { $('toast').textContent = '복사됨. 카톡 대화방에 붙여넣으면 도전장 완성.'; $('copyOut').hidden = true; }, fallback);
+  } catch(e){ fallback(); }
+});
+$('startBtn').addEventListener('click', startSolo);
+$('acceptBtn').addEventListener('click', startVs);
+$('soloBtn').addEventListener('click', () => { opp = null; refreshMenu(); showScreen('menu'); });
+$('againBtn').addEventListener('click', () => {
+  if (opp) startVs();
+  else { const b = loadBest(); ghost = b ? ghostFrom('내 최고', b.t, b.s, b.w) : null; newRun(); }
+});
+$('homeBtn').addEventListener('click', () => { state = 'menu'; opp = null; ghost = null; R = null; refreshMenu(); hidePlayUI(); showScreen('menu'); });
+$('reset').addEventListener('click', () => respawn('깃발에서 다시'));
+$('nm').addEventListener('keydown', e => e.stopPropagation());
+
+function drawChalPreview(sh){
+  const c = $('chalCv'), x = c.getContext('2d'), s = 96;
+  c.width = c.height = s * DPR; x.setTransform(DPR, 0, 0, DPR, 0, 0);
+  x.fillStyle = C.paper; x.fillRect(0, 0, s, s);
+  x.strokeStyle = C.ink; x.lineWidth = TH * s / WSCALE; x.lineCap = 'round'; x.lineJoin = 'round';
+  x.beginPath(); sh.forEach((p, i) => i ? x.lineTo(p.x*s, p.y*s) : x.moveTo(p.x*s, p.y*s)); x.stroke();
+}
+
+function route(){
+  const o = readTok(location.hash.slice(1));
+  if (o){
+    opp = o;
+    $('chalName').textContent = o.n;
+    $('chalTime').textContent = fmt(o.t);
+    drawChalPreview(dequant(o.w));
+    showScreen('chal');
+  } else { refreshMenu(); showScreen('menu'); }
+}
+addEventListener('hashchange', () => { if (state === 'menu' || state === 'done') { hidePlayUI(); state = 'menu'; route(); } });
+
+buildWorld();
+route();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
