@@ -205,7 +205,7 @@ p{margin:0;line-height:1.55}
         <div class="chips" id="shareChips"></div>
       </div>
     </div>
-    <label class="namebox" for="nm">이름 <input id="nm" maxlength="8" placeholder="도전장에 쓸 이름" autocomplete="off"></label>
+    <label class="namebox" for="nm">팽이 이름 <input id="nm" maxlength="10" placeholder="예: 톱날왕" autocomplete="off"></label>
     <button class="btn kakao" id="shareBtn">복사해서 카톡에 붙여넣기</button>
     <div class="toast" id="toast" aria-live="polite"></div>
     <textarea id="copyOut" hidden readonly aria-label="복사할 도전장 문구"></textarea>
@@ -221,7 +221,7 @@ p{margin:0;line-height:1.55}
     <h2 id="verdict">승리</h2>
     <p id="resWhy" class="quote"></p>
     <div class="row" id="resRow1">
-      <button class="btn kakao" id="brag">이겼다고 알리기</button>
+      <button class="btn kakao" id="brag">내 팽이로 도전장 만들기</button>
     </div>
     <div class="row">
       <button class="btn main" id="againBtn">다시 붙기</button>
@@ -521,7 +521,27 @@ function resampleN(pts, maxN){
   return out;
 }
 const q = v => B64[Math.max(0, Math.min(63, Math.round(v * 63)))];
-function encShape(strokes){ return strokes.slice(0, 12).map(s => resampleN(s, 30).map(p => q(p.x) + q(p.y)).join('')).join('.'); }
+/* Ramer-Douglas-Peucker keeps the corners and drops the in-between points: short links, same look */
+function rdp(pts, eps){
+  if (pts.length < 3) return pts;
+  const a = pts[0], b = pts[pts.length-1], dx = b.x-a.x, dy = b.y-a.y, L = Math.hypot(dx, dy) || 1e-9;
+  let best = -1, bi = 0;
+  for (let i = 1; i < pts.length-1; i++){
+    const p = pts[i];
+    const d = L > 1e-6 ? Math.abs(dy*p.x - dx*p.y + b.x*a.y - b.y*a.x) / L : Math.hypot(p.x-a.x, p.y-a.y);
+    if (d > best){ best = d; bi = i; }
+  }
+  if (best <= eps) return [a, b];
+  return rdp(pts.slice(0, bi+1), eps).slice(0, -1).concat(rdp(pts.slice(bi), eps));
+}
+function encShape(strokes){
+  return strokes.slice(0, 16).map(s => {
+    const out = []; let prev = '';
+    for (const p of rdp(s, 0.02)){ const c = q(p.x) + q(p.y); if (c !== prev) out.push(c); prev = c; }
+    if (out.length === 1) out.push(out[0]);
+    return out.join('');
+  }).join('.');
+}
 function decShape(str){
   if (typeof str !== 'string') return [];
   return str.split('.').map(seg => { const pts = []; for (let i = 0; i + 1 < seg.length; i += 2){ const a = B64.indexOf(seg[i]), b = B64.indexOf(seg[i+1]); if (a >= 0 && b >= 0) pts.push({ x:a/63, y:b/63 }); } return pts; }).filter(s => s.length >= 2);
@@ -531,18 +551,17 @@ function decShape(str){
 function hashStr(s){ let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function b64e(str){ const b = new TextEncoder().encode(str); let s = ''; b.forEach(x => s += String.fromCharCode(x)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 function b64d(t){ t = t.replace(/-/g,'+').replace(/_/g,'/'); while (t.length % 4) t += '='; const s = atob(t); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return new TextDecoder().decode(b); }
-function sig(o){ return (hashStr(JSON.stringify([o.n, o.w, o.b, o.t, o.d, o.c, 'top2'])) % 46656).toString(36); }
-function makeTok(o){ return 'tq' + b64e(JSON.stringify({ ...o, k:sig(o) })); }
+/* link token: p + bearing + tip + dir + name(base64url) + '~' + shape */
+function makeTok(o){ return 'p' + o.b + o.t + (o.d > 0 ? 1 : 0) + b64e(o.n) + '~' + o.w; }
 function readTok(h){
   try {
-    if (!h || !h.startsWith('tq')) return null;
-    const o = JSON.parse(b64d(h.slice(2)));
-    if (typeof o.n !== 'string' || typeof o.w !== 'string') return null;
-    if (![0,1,2].includes(o.b) || ![0,1,2].includes(o.t) || ![1,-1].includes(o.d)) return null;
-    if (o.k !== sig(o)) return null;
-    o.n = o.n.slice(0, 10) || '익명'; o.c = Math.max(0, o.c | 0);
-    o.shape = decShape(o.w); if (!o.shape.length) return null;
-    return o;
+    if (!h || h[0] !== 'p') return null;
+    const b = +h[1], t = +h[2], d = h[3] === '1' ? 1 : -1, cut = h.indexOf('~');
+    if (![0,1,2].includes(b) || ![0,1,2].includes(t) || cut < 4) return null;
+    const n = (b64d(h.slice(4, cut)) || '낙서').slice(0, 10);
+    const shape = decShape(h.slice(cut + 1));
+    if (!shape.length) return null;
+    return { n, b, t, d, shape };
   } catch(e){ return null; }
 }
 
@@ -726,41 +745,38 @@ function openWorkshop(){
   $('makeHead').hidden = vs; $('makeBtns').hidden = vs;
   buildOpts(); setTool('pen');
   showScreen('prep');
-  if (vs){ $('foeName').textContent = foe.name + '님의 팽이'; $('foeChips').innerHTML = chipsFor(foe.spec, true) + (foe.c ? `<span class="chip hot">${foe.c}연승 중</span>` : ''); thumb($('foeCv'), foe.spec, C.blue); }
+  if (vs){ $('foeName').textContent = foe.name + ' 팽이'; $('foeChips').innerHTML = chipsFor(foe.spec, true); thumb($('foeCv'), foe.spec, C.blue); }
   $('undoBtn').disabled = !undoStack.length; $('wipeBtn').disabled = !strokes.length;
   requestAnimationFrame(() => { drawPad(); refreshStats(); });
 }
 
 /* ================= share ================= */
-let shareCtx = null;   // { kind:'challenge'|'brag', c }
+let shareFromFoe = null;
 function openShare(kind){
-  shareCtx = { kind, c: kind === 'brag' ? (foe.c || 0) + 1 : 0 };
+  shareFromFoe = foe;
   mode = 'share';
-  $('shareEyebrow').textContent = kind === 'brag' ? foe.name + '님 팽이를 깼다' : '도전장';
-  $('shareTitle').textContent = kind === 'brag' ? '이 팽이로 되받아치기' : '이 팽이로 붙자';
-  $('shareChips').innerHTML = chipsFor(mySpec(), false) + (shareCtx.c ? `<span class="chip hot">${shareCtx.c}연승</span>` : '');
-  $('nm').value = store.get('tp_name', '');
+  $('shareEyebrow').textContent = '도전장';
+  $('shareTitle').textContent = '이 팽이로 대결 신청';
+  $('shareChips').innerHTML = chipsFor(mySpec(), false);
+  $('nm').value = store.get('tp_topname', '');
   $('toast').textContent = ''; $('copyOut').hidden = true;
   showScreen('share');
   thumb($('shareCv'), mySpec(), C.red);
 }
 function baseLink(){ try { return location.href.split('#')[0]; } catch(e){ return ''; } }
+function topName(){ return store.get('tp_topname', '') || '낙서'; }
 function shareText(){
-  const name = ($('nm').value.trim() || '익명').slice(0, 8);
-  store.set('tp_name', name === '익명' ? '' : name);
-  const spec = mySpec();
-  const link = baseLink() + '#' + makeTok({ n:name, w:encShape(strokes), b:myB, t:myT, d:myD, c:shareCtx.c });
-  const kind = statsOf(spec).label;
-  if (shareCtx.kind === 'brag')
-    return '🌀 낙서 팽이\n' + foe.name + ' 팽이 깼다 ㅋ (' + shareCtx.c + '연승)\n이번엔 내 ' + kind + ' 팽이. 회전 방향은 비밀\n' + link;
-  return '🌀 낙서 팽이 도전장\n' + name + '의 ' + kind + ' 팽이\n모양이랑 부품 다 보여줌. 회전 방향만 비밀. 이겨봐\n' + link;
+  const tn = ($('nm').value.trim() || '낙서').slice(0, 10);
+  store.set('tp_topname', tn === '낙서' ? '' : tn);
+  const link = baseLink() + '#' + makeTok({ n:tn, w:encShape(strokes), b:myB, t:myT, d:myD });
+  return tn + ' 팽이 대결하기\n' + link;
 }
 $('shareBtn').addEventListener('click', () => {
   const text = shareText(); snd.click();
   const fallback = () => { const ta = $('copyOut'); ta.hidden = false; ta.value = text; ta.focus(); ta.select(); $('toast').textContent = '자동 복사가 막혔다. 아래 글을 길게 눌러 복사해서 카톡에 붙여넣기.'; };
   try { navigator.clipboard.writeText(text).then(() => { $('toast').textContent = '복사됨. 카톡 대화방에 붙여넣으면 도전장 완성.'; $('copyOut').hidden = true; }, fallback); } catch(e){ fallback(); }
 });
-$('shareBack').addEventListener('click', () => { foe = shareCtx && shareCtx.kind === 'brag' ? foe : null; openWorkshop(); });
+$('shareBack').addEventListener('click', () => { foe = shareFromFoe; openWorkshop(); });
 $('nm').addEventListener('keydown', e => e.stopPropagation());
 
 /* ================= battle ================= */
@@ -781,7 +797,7 @@ function startBattle(isSolo){
   mode = 'battle';
   showScreen(null);
   $('hud').hidden = false;
-  $('hMe').textContent = store.get('tp_name', '') || '나';
+  $('hMe').textContent = topName();
   $('hFoe').textContent = solo ? '' : foe.name;
   $('spFoe').parentElement.style.visibility = solo ? 'hidden' : 'visible';
   ac(); humStart(solo ? 1 : 2);
@@ -839,7 +855,7 @@ function render(){
   for (const p of pops){ ctx.globalAlpha = Math.min(1, p.life*3); ctx.fillStyle = p.big ? C.red : C.ink; ctx.font = '700 ' + (p.big ? 40 : 28) + 'px ' + FONT; ctx.fillText(p.text, cx + p.x*sc, cy + p.y*sc); }
   ctx.globalAlpha = 1;
   ctx.font = '700 17px ' + FONT;
-  const tags = [[G.A, store.get('tp_name','') || '나', C.red]]; if (G.B) tags.push([G.B, foe.name, C.blue]);
+  const tags = [[G.A, topName(), C.red]]; if (G.B) tags.push([G.B, foe.name, C.blue]);
   for (const [t, n, col] of tags){ if (t.state !== 'spin') continue; ctx.fillStyle = col; ctx.fillText(n, cx + t.x*sc, cy + t.y*sc + (t.st.rmax + 18)*sc + 6); }
   if (intro > 0){
     const n = Math.ceil(intro / 0.4);
@@ -910,28 +926,28 @@ function showResult(){
   win ? snd.win() : snd.lose();
   v.textContent = win ? '이겼다' : '졌다'; v.classList.toggle('win', win);
   const why = G.why; let line;
-  if (why === '링아웃') line = win ? foe.name + '님 팽이가 출구로 날아갔다.' : '내 팽이가 출구로 날아갔다.';
-  else if (why === '회전 멈춤') line = win ? foe.name + '님 팽이가 먼저 쓰러졌다.' : '내 팽이가 먼저 쓰러졌다.';
+  if (why === '링아웃') line = win ? foe.name + ' 팽이가 출구로 날아갔다.' : '내 팽이가 출구로 날아갔다.';
+  else if (why === '회전 멈춤') line = win ? foe.name + ' 팽이가 먼저 쓰러졌다.' : '내 팽이가 먼저 쓰러졌다.';
   else if (why.startsWith('판정')) line = '15초 버팀. 남은 회전으로 ' + (win ? '판정승.' : '판정패.');
   else line = '둘 다 쓰러졌다. 끝까지 돈 쪽 ' + (win ? '승리.' : '패배.');
   if (!win && foe.d !== myD) line += ' 상대는 ' + (foe.spec.d > 0 ? '오른쪽 ↻' : '왼쪽 ↺') + ' 회전이었다.';
   else if (!win) line += ' 상대도 같은 방향이었다.';
   $('resWhy').textContent = line;
-  $('resEyebrow').textContent = foe.name + '님의 도전장';
-  $('resRow1').hidden = !win;
+  $('resEyebrow').textContent = foe.name + ' 팽이와 대결';
+  $('resRow1').hidden = false;
   $('againBtn').textContent = '다시 붙기'; $('editBtn').textContent = '팽이 고치기';
   showScreen('result');
 }
 $('againBtn').addEventListener('click', () => startBattle(G && G.solo));
 $('editBtn').addEventListener('click', openWorkshop);
-$('brag').addEventListener('click', () => openShare('brag'));
+$('brag').addEventListener('click', () => openShare());
 
 /* ================= navigation ================= */
 const SCREENS = ['home', 'chal', 'prep', 'share', 'result'];
 function showScreen(id){ SCREENS.forEach(s => $(s).hidden = s !== id); if (id) $('hud').hidden = true; }
 
 $('makeBtn').addEventListener('click', () => { ac(); foe = null; openWorkshop(); });
-$('toShareBtn').addEventListener('click', () => { if (strokes.length) openShare('challenge'); });
+$('toShareBtn').addEventListener('click', () => { if (strokes.length) openShare(); });
 $('soloBtn').addEventListener('click', () => { if (strokes.length) startBattle(true); });
 $('soloBtn2').addEventListener('click', () => { if (strokes.length) startBattle(true); });
 $('fireBtn').addEventListener('click', () => { if (strokes.length && foe) startBattle(false); });
@@ -942,9 +958,9 @@ $('chalGo').addEventListener('click', () => { ac(); foe = friend; openWorkshop()
 function route(){
   const o = readTok(location.hash.slice(1));
   if (o){
-    friend = { name:o.n, spec:{ shape:o.shape, b:o.b, t:o.t, d:o.d }, d:o.d, c:o.c };
-    $('chalName').textContent = o.n + '님의 팽이';
-    $('chalChips').innerHTML = chipsFor(friend.spec, true) + (o.c ? `<span class="chip hot">${o.c}연승 중</span>` : '');
+    friend = { name:o.n, spec:{ shape:o.shape, b:o.b, t:o.t, d:o.d }, d:o.d };
+    $('chalName').textContent = o.n + ' 팽이';
+    $('chalChips').innerHTML = chipsFor(friend.spec, true);
     $('chalSub').textContent = statsOf(friend.spec).label + '. 모양과 부품은 다 보인다. 회전 방향만 숨겨져 있다. 보고 이길 팽이를 그려라.';
     mode = 'chal'; showScreen('chal');
     thumb($('chalCv'), friend.spec, C.blue);
